@@ -32,10 +32,18 @@ export interface DynamicField {
   options?: string[];
 }
 
+export interface FileAttachment {
+  id: string;
+  fileName: string;
+  fileData: string; // Data URL for the file content
+  fieldName: string; // The dynamic field name this is attached to
+}
+
 export interface HealthRecord {
   schoolId: number;
   schoolYearId: number;
   dynamicData?: {
     [key:string]: any;
   };
+  attachments?: FileAttachment[];
 }

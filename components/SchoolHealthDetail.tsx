@@ -1,6 +1,7 @@
 // Fix: Moved the correct SchoolHealthDetail component here from App.tsx.
-import React, { useState, useEffect } from 'react';
-import { School, SchoolYear, HealthRecord, DynamicField } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { School, SchoolYear, HealthRecord, DynamicField, FileAttachment } from '../types';
+import { PaperclipIcon, TrashIcon } from './icons';
 
 interface SchoolHealthDetailProps {
   school: School;
@@ -65,6 +66,9 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [fieldToAttach, setFieldToAttach] = useState<string | null>(null);
+
     useEffect(() => {
         const foundRecord = healthRecords.find(r => r.schoolId === school.id && r.schoolYearId === selectedYear.id);
         const newRecord: HealthRecord = foundRecord 
@@ -72,13 +76,13 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
             : {
                 schoolId: school.id,
                 schoolYearId: selectedYear.id,
-                dynamicData: {}
+                dynamicData: {},
+                attachments: []
             };
-        if (!newRecord.dynamicData) {
-          newRecord.dynamicData = {};
-        }
+        if (!newRecord.dynamicData) newRecord.dynamicData = {};
+        if (!newRecord.attachments) newRecord.attachments = [];
         setRecord(newRecord);
-        setOriginalRecord(JSON.parse(JSON.stringify(newRecord))); // Keep a backup for cancel
+        setOriginalRecord(JSON.parse(JSON.stringify(newRecord)));
         setIsEditing(false);
         setActiveTab('overview');
     }, [school, selectedYear, healthRecords]);
@@ -86,10 +90,8 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
     const handleInputChange = (fieldName: string, value: any) => {
         setRecord(prev => {
             if (!prev) return null;
-            const newRecord = JSON.parse(JSON.stringify(prev)); // Deep copy to handle nested state
-            if (!newRecord.dynamicData) {
-                newRecord.dynamicData = {};
-            }
+            const newRecord = JSON.parse(JSON.stringify(prev));
+            if (!newRecord.dynamicData) newRecord.dynamicData = {};
             newRecord.dynamicData[fieldName] = value;
             return newRecord;
         });
@@ -115,6 +117,50 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
         setRecord(originalRecord);
         setIsEditing(false);
     }
+
+    const handleAttachClick = (fieldName: string) => {
+        setFieldToAttach(fieldName);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file && fieldToAttach) {
+            // In a real app, you would upload the file to a storage service
+            // and get a URL. Here we read it as a data URL for client-side download.
+            const reader = new FileReader();
+            const fieldNameForAttachment = fieldToAttach;
+
+            reader.onload = (e) => {
+                const fileData = e.target?.result as string;
+                const newAttachment: FileAttachment = {
+                    id: Date.now().toString(),
+                    fileName: file.name,
+                    fileData: fileData,
+                    fieldName: fieldNameForAttachment,
+                };
+
+                setRecord(prev => {
+                    if (!prev) return null;
+                    const updatedAttachments = [...(prev.attachments || []), newAttachment];
+                    return { ...prev, attachments: updatedAttachments };
+                });
+            };
+
+            reader.readAsDataURL(file);
+        }
+        // Reset the input value to allow selecting the same file again
+        if (event.target) event.target.value = '';
+        setFieldToAttach(null);
+    };
+
+    const handleRemoveAttachment = (attachmentId: string) => {
+        setRecord(prev => {
+            if (!prev) return null;
+            const updatedAttachments = (prev.attachments || []).filter(att => att.id !== attachmentId);
+            return { ...prev, attachments: updatedAttachments };
+        });
+    };
     
     if (!record) {
         return (
@@ -147,43 +193,120 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
 
     const renderDynamicFieldsForCurrentTab = () => {
       const fieldsForTab = dynamicFields.filter(f => f.tab === activeTab);
-      if (fieldsForTab.length === 0) return (
-        <div className="py-4 text-center text-gray-500">
-            Không có trường thông tin nào được cấu hình cho tab này.
-        </div>
-      );
+      if (fieldsForTab.length === 0 && !['careContract', 'checkContract'].includes(activeTab)) {
+        return (
+            <div className="py-4 text-center text-gray-500">
+                Không có trường thông tin nào được cấu hình cho tab này.
+            </div>
+        );
+      }
 
       const getDefaultValue = (type: DynamicField['type']) => {
         switch (type) {
             case 'checkbox': return false;
             case 'number': return 0;
             case 'select':
-            case 'droplist':
-                 return '';
+            case 'droplist': return '';
             default: return '';
         }
       }
 
+      const contractFieldName = `${activeTab}_contract_file`;
+      const contractAttachment = record.attachments?.find(att => att.fieldName === contractFieldName);
+
       return (
-        <dl>
-            {fieldsForTab.map(field => (
-                <DetailItem
-                    key={field.id}
-                    label={field.label}
-                    value={record.dynamicData?.[field.name] ?? getDefaultValue(field.type)}
-                    isEditing={isEditing}
-                    onChange={(val) => handleInputChange(field.name, val)}
-                    type={field.type}
-                    options={field.options}
-                    name={field.name}
-                />
-            ))}
-        </dl>
+        <>
+            <dl>
+                {fieldsForTab.map(field => {
+                    const attachment = record.attachments?.find(att => att.fieldName === field.name);
+                    return (
+                        <div key={field.id} className="border-b last:border-b-0">
+                            <DetailItem
+                                label={field.label}
+                                value={record.dynamicData?.[field.name] ?? getDefaultValue(field.type)}
+                                isEditing={isEditing}
+                                onChange={(val) => handleInputChange(field.name, val)}
+                                type={field.type}
+                                options={field.options}
+                                name={field.name}
+                            />
+                            {activeTab === 'checklist' && (
+                                <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                                    <dt className="text-sm font-medium text-gray-400">Tệp đính kèm</dt>
+                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                        {attachment ? (
+                                            <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                                <a href={attachment.fileData} download={attachment.fileName} className="flex items-center text-blue-600 hover:underline truncate">
+                                                    <PaperclipIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                    <span className="truncate">{attachment.fileName}</span>
+                                                </a>
+                                                {isEditing && (
+                                                    <button onClick={() => handleRemoveAttachment(attachment.id)} className="p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-100">
+                                                        <TrashIcon className="w-4 h-4"/>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            isEditing ? (
+                                                <button onClick={() => handleAttachClick(field.name)} className="flex items-center text-sm text-brand-blue hover:text-brand-blue-dark font-medium py-1 px-2 rounded-md border-2 border-dashed border-gray-300 hover:border-brand-blue transition-colors">
+                                                    <PaperclipIcon className="w-4 h-4 mr-2"/>
+                                                    Đính kèm tệp
+                                                </button>
+                                            ) : (
+                                                <span className="text-gray-400">Chưa có</span>
+                                            )
+                                        )}
+                                    </dd>
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+            </dl>
+            
+            {(activeTab === 'careContract' || activeTab === 'checkContract') && (
+                <div className="mt-4 pt-4 border-t">
+                    <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                        <dt className="text-sm font-medium text-gray-500">Đính kèm Hợp đồng</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            {contractAttachment ? (
+                                <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                    <a href={contractAttachment.fileData} download={contractAttachment.fileName} className="flex items-center text-blue-600 hover:underline truncate">
+                                        <PaperclipIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                                        <span className="truncate">{contractAttachment.fileName}</span>
+                                    </a>
+                                    {isEditing && (
+                                        <button onClick={() => handleRemoveAttachment(contractAttachment.id)} className="p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-100">
+                                            <TrashIcon className="w-4 h-4"/>
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                isEditing ? (
+                                    <button onClick={() => handleAttachClick(contractFieldName)} className="flex items-center text-sm text-brand-blue hover:text-brand-blue-dark font-medium py-1 px-2 rounded-md border-2 border-dashed border-gray-300 hover:border-brand-blue transition-colors">
+                                        <PaperclipIcon className="w-4 h-4 mr-2"/>
+                                        Đính kèm tệp
+                                    </button>
+                                ) : (
+                                    <span className="text-gray-400">Chưa có</span>
+                                )
+                            )}
+                        </dd>
+                    </div>
+                </div>
+            )}
+        </>
       );
     }
 
     return (
         <div className="bg-white rounded-lg shadow-md animate-fade-in">
+             <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+            />
             <div className="p-6 border-b">
                 <div className="flex justify-between items-start">
                     <div>

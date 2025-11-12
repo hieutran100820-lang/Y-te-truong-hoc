@@ -71,7 +71,8 @@ export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
       checklist_activity_plan: true,
       checklist_inspected: true,
       checklist_collective_kitchen: false,
-    }
+    },
+    attachments: [],
   },
   { 
     schoolId: 2, schoolYearId: 3, 
@@ -87,7 +88,8 @@ export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
       checklist_activity_plan: false,
       checklist_inspected: false,
       checklist_collective_kitchen: true,
-    }
+    },
+    attachments: [],
   },
   { 
     schoolId: 3, schoolYearId: 3, 
@@ -107,7 +109,8 @@ export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
       checklist_activity_plan: true,
       checklist_inspected: false,
       checklist_collective_kitchen: true,
-    }
+    },
+    attachments: [],
   },
   // Year 2023-2024 Data
   { 
@@ -128,7 +131,8 @@ export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
       checklist_activity_plan: true,
       checklist_inspected: true,
       checklist_collective_kitchen: false,
-    }
+    },
+    attachments: [],
   },
   { 
     schoolId: 2, schoolYearId: 2, 
@@ -148,6 +152,7 @@ export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
       checklist_activity_plan: true,
       checklist_inspected: false,
       checklist_collective_kitchen: true,
-    }
+    },
+    attachments: [],
   },
 ];
