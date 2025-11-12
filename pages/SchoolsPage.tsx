@@ -1,0 +1,224 @@
+
+
+import React, { useState } from 'react';
+import { School, SchoolYear, DynamicField, User } from '../types';
+import { SCHOOLS as initialSchools } from '../constants';
+import SchoolHealthDetail from '../components/SchoolHealthDetail';
+import Modal from '../components/Modal';
+import { TrashIcon } from '../components/icons';
+
+interface SchoolsPageProps {
+  selectedYear: SchoolYear;
+  dynamicFields: DynamicField[];
+  currentUser: User;
+}
+
+const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, currentUser }) => {
+    const initialSchoolsForUser = currentUser.role === 'admin' 
+        ? initialSchools 
+        : initialSchools.filter(s => currentUser.assignedSchoolIds?.includes(s.id));
+
+    const [schools, setSchools] = useState<School[]>(initialSchoolsForUser);
+    const [selectedSchool, setSelectedSchool] = useState<School | null>(schools.length > 0 ? schools[0] : null);
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+    const [newSchool, setNewSchool] = useState({
+        name: '',
+        level: 'THCS' as School['level'],
+        location: ''
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setNewSchool(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddSchool = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newSchool.name || !newSchool.location) {
+            alert('Vui lòng điền đầy đủ Tên trường và Địa điểm.');
+            return;
+        }
+
+        const newSchoolWithId: School = {
+            id: Math.max(...schools.map(s => s.id), 0) + 1,
+            ...newSchool
+        };
+
+        const updatedSchools = [...schools, newSchoolWithId];
+        setSchools(updatedSchools);
+        initialSchools.push(newSchoolWithId);
+        setSelectedSchool(newSchoolWithId);
+        
+        setNewSchool({ name: '', level: 'THCS', location: '' });
+        setAddModalOpen(false);
+    };
+
+    const handleDeleteClick = (school: School) => {
+        setSchoolToDelete(school);
+    };
+
+    const handleConfirmDelete = () => {
+        if (!schoolToDelete) return;
+
+        const updatedSchools = schools.filter(s => s.id !== schoolToDelete.id);
+        setSchools(updatedSchools);
+        
+        const schoolIndex = initialSchools.findIndex(s => s.id === schoolToDelete.id);
+        if (schoolIndex > -1) {
+            initialSchools.splice(schoolIndex, 1);
+        }
+
+        if (selectedSchool?.id === schoolToDelete.id) {
+            setSelectedSchool(updatedSchools.length > 0 ? updatedSchools[0] : null);
+        }
+
+        setSchoolToDelete(null);
+    };
+
+    return (
+        <div className="animate-fade-in">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Quản lý Trường học</h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-semibold text-gray-800">Danh sách trường</h3>
+                         {currentUser.role === 'admin' && (
+                            <button 
+                                onClick={() => setAddModalOpen(true)}
+                                className="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-3 rounded text-sm transition-colors duration-300"
+                             >
+                               Thêm mới
+                            </button>
+                         )}
+                    </div>
+                    <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
+                        {schools.map(school => (
+                            <li 
+                                key={school.id}
+                                onClick={() => setSelectedSchool(school)}
+                                className={`group p-3 rounded-md cursor-pointer transition-all duration-200 border-l-4 flex justify-between items-center ${selectedSchool?.id === school.id 
+                                    ? 'bg-brand-blue-light border-brand-blue shadow' 
+                                    : 'hover:bg-gray-100 hover:border-brand-gray-dark border-transparent'
+                                }`}
+                            >
+                                <div className="flex-grow">
+                                    <p className="font-semibold text-gray-800">{school.name}</p>
+                                    <p className="text-sm text-gray-500">{school.level} - {school.location}</p>
+                                </div>
+                                {currentUser.role === 'admin' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteClick(school);
+                                        }}
+                                        className="ml-2 p-1 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        aria-label={`Xóa trường ${school.name}`}
+                                    >
+                                        <TrashIcon className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="lg:col-span-2">
+                    {selectedSchool ? (
+                        <SchoolHealthDetail school={selectedSchool} selectedYear={selectedYear} dynamicFields={dynamicFields} />
+                    ) : (
+                        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+                            <h3 className="text-xl font-semibold text-gray-800">
+                                {currentUser.role === 'admin' ? 'Chọn hoặc tạo trường mới' : 'Thông tin trường học'}
+                            </h3>
+                            <p className="text-gray-500 mt-2">
+                                {currentUser.role === 'admin' 
+                                    ? 'Vui lòng chọn một trường từ danh sách hoặc thêm một trường mới để bắt đầu.'
+                                    : 'Dữ liệu cho trường của bạn được hiển thị ở đây.'
+                                }
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Thêm trường học mới">
+                <form onSubmit={handleAddSchool} className="space-y-4">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-black">Tên trường</label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value={newSchool.name}
+                            onChange={handleInputChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="level" className="block text-sm font-medium text-black">Phân cấp</label>
+                        <select
+                            id="level"
+                            name="level"
+                            value={newSchool.level}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full pl-3 pr-10 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
+                        >
+                            <option value="Mầm non">Mầm non</option>
+                            <option value="Tiểu học">Tiểu học</option>
+                            <option value="THCS">THCS</option>
+                            <option value="THPT">THPT</option>
+                            <option value="Liên cấp">Liên cấp</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label htmlFor="location" className="block text-sm font-medium text-black">Địa điểm</label>
+                        <input
+                            type="text"
+                            id="location"
+                            name="location"
+                            value={newSchool.location}
+                            onChange={handleInputChange}
+                            required
+                             className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
+                        />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <button type="button" onClick={() => setAddModalOpen(false)} className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded mr-2 hover:bg-gray-300 transition-colors duration-300">
+                            Hủy
+                        </button>
+                        <button type="submit" className="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-4 rounded transition-colors duration-300">
+                            Thêm trường
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+            
+            <Modal isOpen={!!schoolToDelete} onClose={() => setSchoolToDelete(null)} title="Xác nhận xóa trường">
+                <div className="py-2">
+                    <p className="text-gray-700">Bạn có chắc chắn muốn xóa trường <span className="font-bold">{schoolToDelete?.name}</span> không?</p>
+                    <p className="text-sm text-red-600 mt-2">Hành động này không thể hoàn tác.</p>
+                </div>
+                <div className="flex justify-end pt-4 space-x-2">
+                    <button 
+                        type="button" 
+                        onClick={() => setSchoolToDelete(null)} 
+                        className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-300 transition-colors duration-300"
+                    >
+                        Hủy
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={handleConfirmDelete} 
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                    >
+                        Xóa
+                    </button>
+                </div>
+            </Modal>
+        </div>
+    );
+};
+
+export default SchoolsPage;

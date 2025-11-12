@@ -1,0 +1,5 @@
+{
+  "name": "School Health Management",
+  "description": "A web application to manage school health records, statistics, and compliance, organized by school year. It provides a dashboard for quick insights, detailed school records management, reporting tools, and dynamic configuration for administrators.",
+  "requestFramePermissions": []
+}
