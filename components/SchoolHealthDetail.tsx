@@ -1,12 +1,13 @@
 // Fix: Moved the correct SchoolHealthDetail component here from App.tsx.
 import React, { useState, useEffect } from 'react';
 import { School, SchoolYear, HealthRecord, DynamicField } from '../types';
-import { HEALTH_RECORDS } from '../constants';
 
 interface SchoolHealthDetailProps {
   school: School;
   selectedYear: SchoolYear;
   dynamicFields: DynamicField[];
+  healthRecords: HealthRecord[];
+  setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
 }
 
 const DetailItem: React.FC<{
@@ -58,14 +59,14 @@ const DetailItem: React.FC<{
 };
 
 
-const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selectedYear, dynamicFields }) => {
+const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selectedYear, dynamicFields, healthRecords, setHealthRecords }) => {
     const [record, setRecord] = useState<HealthRecord | null>(null);
     const [originalRecord, setOriginalRecord] = useState<HealthRecord | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
 
     useEffect(() => {
-        const foundRecord = HEALTH_RECORDS.find(r => r.schoolId === school.id && r.schoolYearId === selectedYear.id);
+        const foundRecord = healthRecords.find(r => r.schoolId === school.id && r.schoolYearId === selectedYear.id);
         const newRecord: HealthRecord = foundRecord 
             ? JSON.parse(JSON.stringify(foundRecord))
             : {
@@ -80,7 +81,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
         setOriginalRecord(JSON.parse(JSON.stringify(newRecord))); // Keep a backup for cancel
         setIsEditing(false);
         setActiveTab('overview');
-    }, [school, selectedYear]);
+    }, [school, selectedYear, healthRecords]);
 
     const handleInputChange = (fieldName: string, value: any) => {
         setRecord(prev => {
@@ -96,13 +97,15 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
 
     const handleSave = () => {
         if (record) {
-            const recordIndex = HEALTH_RECORDS.findIndex(r => r.schoolId === record.schoolId && r.schoolYearId === record.schoolYearId);
+            const recordIndex = healthRecords.findIndex(r => r.schoolId === record.schoolId && r.schoolYearId === record.schoolYearId);
+            let updatedRecords;
             if (recordIndex > -1) {
-                HEALTH_RECORDS[recordIndex] = record;
+                updatedRecords = [...healthRecords];
+                updatedRecords[recordIndex] = record;
             } else {
-                HEALTH_RECORDS.push(record);
+                updatedRecords = [...healthRecords, record];
             }
-            setOriginalRecord(JSON.parse(JSON.stringify(record))); // Update backup
+            setHealthRecords(updatedRecords);
             alert('Đã lưu thông tin thành công!');
         }
         setIsEditing(false);

@@ -1,8 +1,7 @@
 
 
-import React, { useState } from 'react';
-import { School, SchoolYear, DynamicField, User } from '../types';
-import { SCHOOLS as initialSchools } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { School, SchoolYear, DynamicField, User, HealthRecord } from '../types';
 import SchoolHealthDetail from '../components/SchoolHealthDetail';
 import Modal from '../components/Modal';
 import { TrashIcon } from '../components/icons';
@@ -11,15 +10,18 @@ interface SchoolsPageProps {
   selectedYear: SchoolYear;
   dynamicFields: DynamicField[];
   currentUser: User;
+  schools: School[];
+  setSchools: React.Dispatch<React.SetStateAction<School[]>>;
+  healthRecords: HealthRecord[];
+  setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
 }
 
-const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, currentUser }) => {
-    const initialSchoolsForUser = currentUser.role === 'admin' 
-        ? initialSchools 
-        : initialSchools.filter(s => currentUser.assignedSchoolIds?.includes(s.id));
+const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, currentUser, schools, setSchools, healthRecords, setHealthRecords }) => {
+    const schoolsForUser = currentUser.role === 'admin' 
+        ? schools
+        : schools.filter(s => currentUser.assignedSchoolIds?.includes(s.id));
 
-    const [schools, setSchools] = useState<School[]>(initialSchoolsForUser);
-    const [selectedSchool, setSelectedSchool] = useState<School | null>(schools.length > 0 ? schools[0] : null);
+    const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
     const [newSchool, setNewSchool] = useState({
@@ -27,6 +29,16 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
         level: 'THCS' as School['level'],
         location: ''
     });
+
+    useEffect(() => {
+        // Update selectedSchool if the list changes or on initial load
+        if (schoolsForUser.length > 0 && !schoolsForUser.find(s => s.id === selectedSchool?.id)) {
+            setSelectedSchool(schoolsForUser[0]);
+        } else if (schoolsForUser.length === 0) {
+            setSelectedSchool(null);
+        }
+    }, [schoolsForUser, selectedSchool]);
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -47,7 +59,6 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
 
         const updatedSchools = [...schools, newSchoolWithId];
         setSchools(updatedSchools);
-        initialSchools.push(newSchoolWithId);
         setSelectedSchool(newSchoolWithId);
         
         setNewSchool({ name: '', level: 'THCS', location: '' });
@@ -63,15 +74,6 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
 
         const updatedSchools = schools.filter(s => s.id !== schoolToDelete.id);
         setSchools(updatedSchools);
-        
-        const schoolIndex = initialSchools.findIndex(s => s.id === schoolToDelete.id);
-        if (schoolIndex > -1) {
-            initialSchools.splice(schoolIndex, 1);
-        }
-
-        if (selectedSchool?.id === schoolToDelete.id) {
-            setSelectedSchool(updatedSchools.length > 0 ? updatedSchools[0] : null);
-        }
 
         setSchoolToDelete(null);
     };
@@ -94,7 +96,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                          )}
                     </div>
                     <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
-                        {schools.map(school => (
+                        {schoolsForUser.map(school => (
                             <li 
                                 key={school.id}
                                 onClick={() => setSelectedSchool(school)}
@@ -125,7 +127,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                 </div>
                 <div className="lg:col-span-2">
                     {selectedSchool ? (
-                        <SchoolHealthDetail school={selectedSchool} selectedYear={selectedYear} dynamicFields={dynamicFields} />
+                        <SchoolHealthDetail school={selectedSchool} selectedYear={selectedYear} dynamicFields={dynamicFields} healthRecords={healthRecords} setHealthRecords={setHealthRecords} />
                     ) : (
                         <div className="bg-white p-6 rounded-lg shadow-md text-center">
                             <h3 className="text-xl font-semibold text-gray-800">
@@ -134,7 +136,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                             <p className="text-gray-500 mt-2">
                                 {currentUser.role === 'admin' 
                                     ? 'Vui lòng chọn một trường từ danh sách hoặc thêm một trường mới để bắt đầu.'
-                                    : 'Dữ liệu cho trường của bạn được hiển thị ở đây.'
+                                    : 'Không có trường nào được gán cho tài khoản của bạn.'
                                 }
                             </p>
                         </div>

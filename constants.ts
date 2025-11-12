@@ -1,7 +1,7 @@
 // Fix: Moved constant data here from types.ts and removed React component code.
 import { School, SchoolYear, HealthRecord, User, DynamicField } from './types';
 
-export const DEFAULT_DYNAMIC_FIELDS: DynamicField[] = [
+export const INITIAL_DYNAMIC_FIELDS: DynamicField[] = [
     // Tab: overview
     { id: 'df_01', tab: 'overview', label: 'Tổng số học sinh', name: 'student_count', type: 'number' },
     
@@ -29,14 +29,14 @@ export const DEFAULT_DYNAMIC_FIELDS: DynamicField[] = [
 ];
 
 
-export const SCHOOL_YEARS: SchoolYear[] = [
+export const INITIAL_SCHOOL_YEARS: SchoolYear[] = [
   { id: 1, year: '2022-2023', isCurrent: false, isLocked: true },
   { id: 2, year: '2023-2024', isCurrent: false, isLocked: true },
   { id: 3, year: '2024-2025', isCurrent: true, isLocked: false },
   { id: 4, year: '2025-2026', isCurrent: false, isLocked: false },
 ];
 
-export const SCHOOLS: School[] = [
+export const INITIAL_SCHOOLS: School[] = [
   { id: 1, name: 'THCS Đức Phú', level: 'THCS', location: 'Tánh Linh, Bình Thuận' },
   { id: 2, name: 'Tiểu học Suối Kiết', level: 'Tiểu học', location: 'Tánh Linh, Bình Thuận' },
   { id: 3, name: 'THPT Tánh Linh', level: 'THPT', location: 'Tánh Linh, Bình Thuận' },
@@ -44,14 +44,14 @@ export const SCHOOLS: School[] = [
   { id: 5, name: 'Tiểu học Đức Bình', level: 'Tiểu học', location: 'Tánh Linh, Bình Thuận' },
 ];
 
-export const USERS: User[] = [
-    { id: 0, name: 'Quản trị viên', phone: 'N/A', username: 'admin', password: '180724', role: 'admin' },
+export const INITIAL_USERS: User[] = [
+    { id: 0, name: 'Quản trị viên', phone: 'N/A', username: 'admin', password: '123456', role: 'admin', assignedSchoolIds: [] },
     { id: 1, name: 'Nguyễn Văn An', phone: '0901234567', username: 'user1', password: 'password', role: 'user', assignedSchoolIds: [1] },
     { id: 2, name: 'Trần Thị Bình', phone: '0907654321', username: 'user2', password: 'password', role: 'user', assignedSchoolIds: [2] },
     { id: 3, name: 'Lê Văn Cường', phone: '0912345678', username: 'user3', password: 'password', role: 'user', assignedSchoolIds: [3] },
 ];
 
-export const HEALTH_RECORDS: HealthRecord[] = [
+export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
   // Year 2024-2025 Data
   { 
     schoolId: 1, schoolYearId: 3, 

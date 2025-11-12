@@ -1,14 +1,16 @@
 
+
 import React, { useState } from 'react';
-import { SchoolYear, DynamicField } from '../types';
+import { SchoolYear, DynamicField, HealthRecord } from '../types';
 import Modal from '../components/Modal';
-import { HEALTH_RECORDS } from '../constants';
 
 interface SettingsPageProps {
   schoolYears: SchoolYear[];
   setSchoolYears: React.Dispatch<React.SetStateAction<SchoolYear[]>>;
   dynamicFields: DynamicField[];
   setDynamicFields: React.Dispatch<React.SetStateAction<DynamicField[]>>;
+  healthRecords: HealthRecord[];
+  setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
 }
 
 const TABS: { [key: string]: string } = {
@@ -27,7 +29,7 @@ const initialFieldState = {
     options: ''
 };
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields, healthRecords, setHealthRecords }) => {
     const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
     const [yearToEdit, setYearToEdit] = useState<SchoolYear | null>(null);
     const [yearToLock, setYearToLock] = useState<SchoolYear | null>(null);
@@ -121,12 +123,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         
         setSchoolYears(schoolYears.filter(sy => sy.id !== yearToDelete.id));
 
-        let i = HEALTH_RECORDS.length;
-        while (i--) {
-            if (HEALTH_RECORDS[i].schoolYearId === yearToDelete.id) {
-                HEALTH_RECORDS.splice(i, 1);
-            }
-        }
+        const updatedHealthRecords = healthRecords.filter(hr => hr.schoolYearId !== yearToDelete.id);
+        setHealthRecords(updatedHealthRecords);
 
         setYearToDelete(null);
     };

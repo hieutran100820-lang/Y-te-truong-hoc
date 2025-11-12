@@ -1,7 +1,6 @@
 // Fix: Moved the correct DashboardPage component here from components/SchoolHealthDetail.tsx.
 import React from 'react';
-import { SchoolYear, User } from '../types';
-import { HEALTH_RECORDS, SCHOOLS } from '../constants';
+import { SchoolYear, User, School, HealthRecord } from '../types';
 import DashboardCard from '../components/DashboardCard';
 import { SchoolIcon, ChartBarIcon, UsersIcon } from '../components/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -9,17 +8,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 interface DashboardPageProps {
     selectedYear: SchoolYear;
     currentUser: User;
+    schools: School[];
+    healthRecords: HealthRecord[];
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser, schools, healthRecords }) => {
     // Note: For a true user-specific view, this data would be filtered by currentUser.assignedSchoolId
-    const recordsForYear = HEALTH_RECORDS.filter(r => r.schoolYearId === selectedYear.id);
-    const totalSchools = SCHOOLS.length;
+    const recordsForYear = healthRecords.filter(r => r.schoolYearId === selectedYear.id);
+    const totalSchools = schools.length;
     const totalStudents = recordsForYear.reduce((sum, r) => sum + (Number(r.dynamicData?.['student_count']) || 0), 0);
     const contractsSigned = recordsForYear.filter(r => r.dynamicData?.['care_contract_status'] === 'Đã ký').length;
     const healthChecksDone = recordsForYear.filter(r => r.dynamicData?.['check_contract_completed'] === true).length;
 
-    const chartData = SCHOOLS.map(school => {
+    const chartData = schools.map(school => {
         const record = recordsForYear.find(r => r.schoolId === school.id);
         return {
             name: school.name.replace('THCS ', '').replace('Tiểu học ', ''),

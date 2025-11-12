@@ -1,7 +1,13 @@
 // Fix: Moved the correct App component here from constants.ts.
 import React, { useState, useEffect } from 'react';
-import { SchoolYear, DynamicField, User } from './types';
-import { SCHOOL_YEARS as initialSchoolYears, DEFAULT_DYNAMIC_FIELDS, USERS } from './constants';
+import { SchoolYear, DynamicField, User, School, HealthRecord } from './types';
+import { 
+    INITIAL_SCHOOL_YEARS, 
+    INITIAL_DYNAMIC_FIELDS, 
+    INITIAL_USERS,
+    INITIAL_SCHOOLS,
+    INITIAL_HEALTH_RECORDS
+} from './constants';
 import { HomeIcon, SchoolIcon, ChartBarIcon, UsersIcon, CogIcon, LogoutIcon } from './components/icons';
 import DashboardPage from './pages/DashboardPage';
 import SchoolsPage from './pages/SchoolsPage';
@@ -9,6 +15,9 @@ import ReportsPage from './pages/ReportsPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import { database } from './firebaseConfig';
+import { ref, onValue, set, get } from "firebase/database";
+
 
 type Page = 'dashboard' | 'schools' | 'reports' | 'users' | 'settings';
 
@@ -52,12 +61,70 @@ const Header: React.FC<{
 const App: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-    const [schoolYears, setSchoolYears] = useState<SchoolYear[]>(initialSchoolYears);
     const [selectedYear, setSelectedYear] = useState<SchoolYear | undefined>();
-    const [dynamicFields, setDynamicFields] = useState<DynamicField[]>(DEFAULT_DYNAMIC_FIELDS);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+    // Centralized state management
+    const [schoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
+    const [dynamicFields, setDynamicFields] = useState<DynamicField[]>([]);
+    const [schools, setSchools] = useState<School[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+
+    // Function to seed initial data if database is empty
+    const seedDatabase = () => {
+        const initialData = {
+            schoolYears: INITIAL_SCHOOL_YEARS,
+            dynamicFields: INITIAL_DYNAMIC_FIELDS,
+            schools: INITIAL_SCHOOLS,
+            users: INITIAL_USERS,
+            healthRecords: INITIAL_HEALTH_RECORDS,
+        };
+        set(ref(database), initialData)
+            .then(() => console.log("Database seeded successfully!"))
+            .catch((error) => console.error("Error seeding database:", error));
+    };
+
+    // Effect to load all data from Firebase and listen for real-time updates
+    useEffect(() => {
+        const dbRef = ref(database);
+        
+        const unsubscribe = onValue(dbRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                setSchoolYears(data.schoolYears || []);
+                setDynamicFields(data.dynamicFields || []);
+                setSchools(data.schools || []);
+                setUsers(data.users || []);
+                setHealthRecords(data.healthRecords || []);
+            } else {
+                console.log("No data available in Firebase. Seeding with initial data.");
+                seedDatabase();
+            }
+            setIsDataLoaded(true);
+        }, (error) => {
+            console.error("Firebase read failed:", error);
+            // Fallback for initial load if DB is empty and offline
+            if (!isDataLoaded) {
+                 seedDatabase();
+            }
+        });
+        
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
+    }, []);
+    
+    // Effect to set the selected year
+    useEffect(() => {
+        if(schoolYears.length > 0) {
+            const currentYear = schoolYears.find(sy => sy.isCurrent) || schoolYears[0];
+            setSelectedYear(currentYear);
+        }
+    }, [schoolYears]);
 
     const handleLogin = (user: string, pass: string) => {
-        const foundUser = USERS.find(u => u.username === user && u.password === pass);
+        // Find user from the state, not the constant
+        const foundUser = users.find(u => u.username === user && u.password === pass);
         if (foundUser) {
             setCurrentUser(foundUser);
         } else {
@@ -70,26 +137,41 @@ const App: React.FC = () => {
         setCurrentPage('dashboard');
     };
 
-    useEffect(() => {
-        const currentYear = schoolYears.find(sy => sy.isCurrent);
-        setSelectedYear(currentYear);
-    }, [schoolYears]);
-
     const handleYearChange = (yearId: number) => {
         const year = schoolYears.find(sy => sy.id === yearId);
         setSelectedYear(year);
     };
 
+    // --- Data Update Functions ---
+    // These functions now write to Firebase instead of just updating local state.
+    // The onValue listener will then update the local state for all connected clients.
+    const updateSchools = (updatedSchools: School[]) => {
+        set(ref(database, 'schools'), updatedSchools);
+    };
+    const updateUsers = (updatedUsers: User[]) => {
+        set(ref(database, 'users'), updatedUsers);
+    };
+    const updateHealthRecords = (updatedRecords: HealthRecord[]) => {
+        set(ref(database, 'healthRecords'), updatedRecords);
+    };
+    const updateSchoolYears = (updatedYears: SchoolYear[]) => {
+        set(ref(database, 'schoolYears'), updatedYears);
+    };
+    const updateDynamicFields = (updatedFields: DynamicField[]) => {
+        set(ref(database, 'dynamicFields'), updatedFields);
+    };
+
+
     const renderPage = () => {
-        if (!selectedYear || !currentUser) return <div className="p-8">Đang tải...</div>;
+        if (!selectedYear || !currentUser || !isDataLoaded) return <div className="p-8">Đang tải dữ liệu từ cloud...</div>;
 
         switch (currentPage) {
-            case 'dashboard': return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} />;
-            case 'schools': return <SchoolsPage selectedYear={selectedYear} dynamicFields={dynamicFields} currentUser={currentUser} />;
-            case 'reports': return <ReportsPage schoolYears={schoolYears} dynamicFields={dynamicFields} currentUser={currentUser} />;
-            case 'users': return currentUser.role === 'admin' ? <UsersPage /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} />;
-            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={setSchoolYears} dynamicFields={dynamicFields} setDynamicFields={setDynamicFields} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} />;
-            default: return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} />;
+            case 'dashboard': return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords}/>;
+            case 'schools': return <SchoolsPage selectedYear={selectedYear} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} setSchools={updateSchools} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} />;
+            case 'reports': return <ReportsPage schoolYears={schoolYears} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
+            case 'users': return currentUser.role === 'admin' ? <UsersPage users={users} setUsers={updateUsers} schools={schools} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
+            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={updateSchoolYears} dynamicFields={dynamicFields} setDynamicFields={updateDynamicFields} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
+            default: return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
         }
     };
 

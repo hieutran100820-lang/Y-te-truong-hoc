@@ -1,9 +1,14 @@
 
 
 import React, { useState } from 'react';
-import { USERS, SCHOOLS } from '../constants';
-import { User } from '../types';
+import { School, User } from '../types';
 import Modal from '../components/Modal';
+
+interface UsersPageProps {
+    users: User[];
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+    schools: School[];
+}
 
 const initialFormState: Omit<User, 'id'> & { id?: number; password?: string } = {
     name: '',
@@ -14,8 +19,7 @@ const initialFormState: Omit<User, 'id'> & { id?: number; password?: string } = 
     assignedSchoolIds: [],
 };
 
-const UsersPage: React.FC = () => {
-    const [users, setUsers] = useState<User[]>(USERS);
+const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -77,7 +81,7 @@ const UsersPage: React.FC = () => {
                 name: formData.name,
                 phone: formData.phone,
                 role: formData.role,
-                assignedSchoolIds: formData.role === 'user' ? formData.assignedSchoolIds : undefined,
+                assignedSchoolIds: formData.role === 'user' ? (formData.assignedSchoolIds || []) : [],
             };
             if (formData.password) {
                 updatedUser.password = formData.password;
@@ -85,8 +89,6 @@ const UsersPage: React.FC = () => {
 
             const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
             setUsers(updatedUsers);
-            const userIndex = USERS.findIndex(u => u.id === currentUser.id);
-            if(userIndex > -1) USERS[userIndex] = updatedUser;
 
         } else { // Adding
             if (!formData.password) {
@@ -100,10 +102,9 @@ const UsersPage: React.FC = () => {
                 username: formData.username,
                 password: formData.password,
                 role: formData.role,
-                assignedSchoolIds: formData.role === 'user' ? formData.assignedSchoolIds : undefined,
+                assignedSchoolIds: formData.role === 'user' ? (formData.assignedSchoolIds || []) : [],
             };
             setUsers([...users, newUser]);
-            USERS.push(newUser);
         }
         closeModal();
     };
@@ -113,9 +114,6 @@ const UsersPage: React.FC = () => {
         
         const updatedUsers = users.filter(u => u.id !== currentUser.id);
         setUsers(updatedUsers);
-
-        const userIndex = USERS.findIndex(u => u.id === currentUser.id);
-        if (userIndex > -1) USERS.splice(userIndex, 1);
         
         closeModal();
     };
@@ -159,7 +157,7 @@ const UsersPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {users.map((user) => {
-                                const assignedSchools = user.assignedSchoolIds?.map(id => SCHOOLS.find(s => s.id === id)?.name).filter(Boolean).join(', ');
+                                const assignedSchools = user.assignedSchoolIds?.map(id => schools.find(s => s.id === id)?.name).filter(Boolean).join(', ');
                                 return (
                                     <tr key={user.id} className="hover:bg-gray-50">
                                         <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
@@ -212,7 +210,7 @@ const UsersPage: React.FC = () => {
                         <div>
                             <label className="block text-sm font-medium text-black">Gán cho trường</label>
                             <div className="mt-1 max-h-40 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-2 bg-white">
-                                {SCHOOLS.map(school => (
+                                {schools.map(school => (
                                     <div key={school.id} className="flex items-center">
                                         <input
                                             id={`school-${school.id}`}

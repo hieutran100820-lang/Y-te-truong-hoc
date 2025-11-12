@@ -1,7 +1,6 @@
 // Fix: Moved the correct ReportsPage component here from pages/DashboardPage.tsx.
 import React, { useState } from 'react';
-import { SCHOOLS, HEALTH_RECORDS } from '../constants';
-import { SchoolYear, DynamicField, User } from '../types';
+import { School, HealthRecord, SchoolYear, DynamicField, User } from '../types';
 
 type ReportType = 'staff' | 'careContract' | 'checkContract' | 'checklist';
 
@@ -14,7 +13,6 @@ interface ReportData {
 interface ComparisonMetrics {
     totalStudents: number;
     careContractsSigned: number;
-
     checkContractsCompleted: number;
     schoolCount: number;
 }
@@ -28,9 +26,12 @@ interface ReportsPageProps {
     schoolYears: SchoolYear[];
     dynamicFields: DynamicField[];
     currentUser: User;
+    schools: School[];
+    healthRecords: HealthRecord[];
 }
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, currentUser }) => {
+
+const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, currentUser, schools, healthRecords }) => {
     const [selectedYearId, setSelectedYearId] = useState<number>(schoolYears.find(sy => sy.isCurrent)?.id || schoolYears[0]?.id);
     const [reportType, setReportType] = useState<ReportType>('staff');
     const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -41,20 +42,21 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
     const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
     const [showComparison, setShowComparison] = useState<boolean>(false);
 
-    const getSchoolName = (schoolId: number): string => SCHOOLS.find(s => s.id === schoolId)?.name || 'Không rõ';
+    const getSchoolName = (schoolId: number): string => schools.find(s => s.id === schoolId)?.name || 'Không rõ';
 
     const generateReportData = (): ReportData | null => {
         const year = schoolYears.find(sy => sy.id === selectedYearId);
         if (!year) return null;
 
-        const recordsForYear = HEALTH_RECORDS.filter(r => r.schoolYearId === selectedYearId);
+        const recordsForYear = healthRecords.filter(r => r.schoolYearId === selectedYearId);
         const data: ReportData = { title: '', headers: [], rows: [] };
         
-        const allSchoolIds = currentUser.role === 'admin' 
-            ? SCHOOLS.map(s => s.id)
-            : currentUser.assignedSchoolIds || [];
+        const schoolsToReportOn = currentUser.role === 'admin' 
+            ? schools 
+            : schools.filter(s => currentUser.assignedSchoolIds?.includes(s.id));
 
-        const recordsBySchoolId = new Map(recordsForYear.map(r => [r.schoolId, r]));
+        // Fix: Explicitly type the Map to prevent `record` from being inferred as `unknown`.
+        const recordsBySchoolId: Map<number, HealthRecord> = new Map(recordsForYear.map(r => [r.schoolId, r]));
 
         const fieldsForReport = dynamicFields.filter(df => df.tab === reportType);
 
@@ -70,9 +72,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
         data.title = reportTitles[reportType];
         data.headers = ['Tên trường', ...fieldsForReport.map(f => f.label)];
         
-        allSchoolIds.forEach(id => {
-            const record = recordsBySchoolId.get(id);
-            const row: (string | number | boolean)[] = [getSchoolName(id)];
+        schoolsToReportOn.forEach(school => {
+            const record = recordsBySchoolId.get(school.id);
+            const row: (string | number | boolean)[] = [school.name];
 
             fieldsForReport.forEach(field => {
                 const value = record?.dynamicData?.[field.name];
@@ -101,13 +103,13 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
     };
 
     const calculateMetricsForYear = (yearId: number): ComparisonMetrics => {
-        const records = HEALTH_RECORDS.filter(r => r.schoolYearId === yearId);
+        const records = healthRecords.filter(r => r.schoolYearId === yearId);
         const schoolCount = new Set(records.map(r => r.schoolId)).size;
         return {
             totalStudents: records.reduce((sum, r) => sum + (Number(r.dynamicData?.['student_count']) || 0), 0),
             careContractsSigned: records.filter(r => r.dynamicData?.['care_contract_status'] === 'Đã ký').length,
             checkContractsCompleted: records.filter(r => r.dynamicData?.['check_contract_completed'] === true).length,
-            schoolCount: schoolCount > 0 ? schoolCount : SCHOOLS.length, // Avoid division by zero
+            schoolCount: schoolCount > 0 ? schoolCount : schools.length, // Avoid division by zero
         };
     };
 
@@ -135,7 +137,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
 
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <h3 className="text-xl font-semibold text-black border-b pb-2 mb-4">Tùy chọn Báo cáo</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                     <div>
                         <label className="block text-sm font-medium text-black mb-1">Năm học</label>
                         <select 
@@ -159,10 +161,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
                             <option value="checklist">Tuân thủ Hoạt động (Checklist)</option>
                         </select>
                     </div>
-                    <div className="flex space-x-2">
-                        <button onClick={handleGenerateReport} className="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2.5 px-4 rounded transition-colors duration-300">Xem báo cáo</button>
-                        <button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded transition-colors duration-300">Xuất Excel</button>
-                    </div>
+                    <button onClick={handleGenerateReport} className="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2.5 px-4 rounded transition-colors duration-300">Xem báo cáo</button>
                 </div>
             </div>
 
@@ -251,13 +250,13 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
                                 </tr>
                                 <tr className="hover:bg-gray-50">
                                     <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm font-semibold text-black">HĐ CSSK đã ký</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.careContractsSigned} ({ (comparisonData.year1.metrics.careContractsSigned / SCHOOLS.length * 100).toFixed(1) }%)</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.careContractsSigned} ({ (comparisonData.year2.metrics.careContractsSigned / SCHOOLS.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.careContractsSigned} ({ (comparisonData.year1.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.careContractsSigned} ({ (comparisonData.year2.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
                                 </tr>
                                 <tr className="hover:bg-gray-50">
                                     <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm font-semibold text-black">KSK đã hoàn thành</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.checkContractsCompleted} ({ (comparisonData.year1.metrics.checkContractsCompleted / SCHOOLS.length * 100).toFixed(1) }%)</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.checkContractsCompleted} ({ (comparisonData.year2.metrics.checkContractsCompleted / SCHOOLS.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.checkContractsCompleted} ({ (comparisonData.year1.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.checkContractsCompleted} ({ (comparisonData.year2.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
                                 </tr>
                             </tbody>
                         </table>
