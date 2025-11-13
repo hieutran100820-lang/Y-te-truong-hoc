@@ -21,11 +21,11 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
         className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 m-4 animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center border-b pb-3">
-          <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+          <h3 className="text-xl font-semibold text-slate-800">{title}</h3>
           <button 
             onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600"
+            className="text-slate-400 hover:text-slate-600"
             aria-label="Close modal"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

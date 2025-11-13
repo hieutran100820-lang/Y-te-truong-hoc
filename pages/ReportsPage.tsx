@@ -132,28 +132,28 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
     }
     
     return (
-        <div className="animate-fade-in space-y-8">
-            <h2 className="text-3xl font-bold text-black">Báo cáo & Thống kê</h2>
+        <div className="animate-fade-in space-y-6">
+            <h2 className="text-3xl font-bold text-slate-800">Báo cáo & Thống kê</h2>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-xl font-semibold text-black border-b pb-2 mb-4">Tùy chọn Báo cáo</h3>
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-2 mb-4">Tùy chọn Báo cáo</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                     <div>
-                        <label className="block text-sm font-medium text-black mb-1">Năm học</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Năm học</label>
                         <select 
                             value={selectedYearId}
                             onChange={(e) => setSelectedYearId(Number(e.target.value))}
-                            className="bg-white border border-gray-300 text-black text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block w-full p-2.5"
+                            className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand focus:border-brand block w-full p-2.5"
                         >
                             {schoolYears.map(sy => <option key={sy.id} value={sy.id}>{sy.year}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-black mb-1">Loại báo cáo</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Loại báo cáo</label>
                         <select 
                             value={reportType}
                             onChange={(e) => setReportType(e.target.value as ReportType)}
-                            className="bg-white border border-gray-300 text-black text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block w-full p-2.5"
+                            className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand focus:border-brand block w-full p-2.5"
                         >
                             <option value="staff">Tình trạng Nhân sự YTTH</option>
                             <option value="careContract">Tình trạng Hợp đồng CSSK</option>
@@ -161,19 +161,19 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
                             <option value="checklist">Tuân thủ Hoạt động (Checklist)</option>
                         </select>
                     </div>
-                    <button onClick={handleGenerateReport} className="w-full bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2.5 px-4 rounded transition-colors duration-300">Xem báo cáo</button>
+                    <button onClick={handleGenerateReport} className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-2.5 px-4 rounded transition-colors duration-300">Xem báo cáo</button>
                 </div>
             </div>
 
             {showReport && reportData && (
-                <div className="bg-white p-6 rounded-lg shadow-md animate-fade-in">
-                    <h3 className="text-xl font-semibold text-black mb-4">{reportData.title}</h3>
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm animate-fade-in">
+                    <h3 className="text-xl font-semibold text-slate-800 mb-4">{reportData.title}</h3>
                     <div className="overflow-x-auto">
                         <table className="min-w-full leading-normal">
                             <thead>
                                 <tr>
                                     {reportData.headers.map(header => (
-                                        <th key={header} className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-black uppercase tracking-wider">
+                                        <th key={header} className="px-5 py-3 border-b-2 border-slate-200 bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                             {header}
                                         </th>
                                     ))}
@@ -181,10 +181,10 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
                             </thead>
                             <tbody>
                                 {reportData.rows.map((row, rowIndex) => (
-                                    <tr key={rowIndex} className="hover:bg-gray-50">
+                                    <tr key={rowIndex} className="hover:bg-slate-50">
                                         {row.map((cell, cellIndex) => (
-                                            <td key={cellIndex} className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-                                                <p className="text-black whitespace-no-wrap">{cell}</p>
+                                            <td key={cellIndex} className="px-5 py-4 border-b border-slate-200 bg-white text-sm">
+                                                <p className="text-slate-900 whitespace-no-wrap">{cell}</p>
                                             </td>
                                         ))}
                                     </tr>
@@ -196,32 +196,32 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
             )}
             
             {!showReport && !showComparison && (
-                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="text-center text-gray-500 py-10">
+                 <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                    <div className="text-center text-slate-500 py-10">
                         <p>Vui lòng chọn các tùy chọn và nhấn "Xem báo cáo" hoặc "So sánh" để hiển thị dữ liệu.</p>
                     </div>
                 </div>
             )}
 
             {currentUser.role === 'admin' && (
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-black border-b pb-2 mb-4">Báo cáo So sánh (Nâng cao)</h3>
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-2 mb-4">Báo cáo So sánh (Nâng cao)</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div>
-                            <label className="block text-sm font-medium text-black mb-1">So sánh năm</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">So sánh năm</label>
                             <select 
                                 value={compareYear1Id}
                                 onChange={e => setCompareYear1Id(Number(e.target.value))}
-                                className="bg-white border border-gray-300 text-black text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block w-full p-2.5">
+                                className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand focus:border-brand block w-full p-2.5">
                                 {schoolYears.map(sy => <option key={sy.id} value={sy.id}>{sy.year}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-black mb-1">với năm</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">với năm</label>
                             <select 
                                 value={compareYear2Id}
                                 onChange={e => setCompareYear2Id(Number(e.target.value))}
-                                className="bg-white border border-gray-300 text-black text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block w-full p-2.5">
+                                className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand focus:border-brand block w-full p-2.5">
                                 {schoolYears.map(sy => <option key={sy.id} value={sy.id}>{sy.year}</option>)}
                             </select>
                         </div>
@@ -231,32 +231,32 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ schoolYears, dynamicFields, c
             )}
             
             {showComparison && comparisonData && (
-                <div className="bg-white p-6 rounded-lg shadow-md animate-fade-in">
-                    <h3 className="text-xl font-semibold text-black mb-4">Kết quả So sánh: {comparisonData.year1.year} và {comparisonData.year2.year}</h3>
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm animate-fade-in">
+                    <h3 className="text-xl font-semibold text-slate-800 mb-4">Kết quả So sánh: {comparisonData.year1.year} và {comparisonData.year2.year}</h3>
                      <div className="overflow-x-auto">
                         <table className="min-w-full leading-normal">
                             <thead>
                                 <tr>
-                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-black uppercase tracking-wider">Chỉ số</th>
-                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-black uppercase tracking-wider">{comparisonData.year1.year}</th>
-                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-black uppercase tracking-wider">{comparisonData.year2.year}</th>
+                                    <th className="px-5 py-3 border-b-2 border-slate-200 bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Chỉ số</th>
+                                    <th className="px-5 py-3 border-b-2 border-slate-200 bg-slate-50 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">{comparisonData.year1.year}</th>
+                                    <th className="px-5 py-3 border-b-2 border-slate-200 bg-slate-50 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">{comparisonData.year2.year}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm font-semibold text-black">Tổng số học sinh</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.totalStudents.toLocaleString('vi-VN')}</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.totalStudents.toLocaleString('vi-VN')}</td>
+                                <tr className="hover:bg-slate-50">
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm font-semibold text-slate-900">Tổng số học sinh</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year1.metrics.totalStudents.toLocaleString('vi-VN')}</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year2.metrics.totalStudents.toLocaleString('vi-VN')}</td>
                                 </tr>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm font-semibold text-black">HĐ CSSK đã ký</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.careContractsSigned} ({ (comparisonData.year1.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.careContractsSigned} ({ (comparisonData.year2.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
+                                <tr className="hover:bg-slate-50">
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm font-semibold text-slate-900">HĐ CSSK đã ký</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year1.metrics.careContractsSigned} ({ (comparisonData.year1.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year2.metrics.careContractsSigned} ({ (comparisonData.year2.metrics.careContractsSigned / schools.length * 100).toFixed(1) }%)</td>
                                 </tr>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm font-semibold text-black">KSK đã hoàn thành</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year1.metrics.checkContractsCompleted} ({ (comparisonData.year1.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
-                                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center text-black">{comparisonData.year2.metrics.checkContractsCompleted} ({ (comparisonData.year2.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
+                                <tr className="hover:bg-slate-50">
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm font-semibold text-slate-900">KSK đã hoàn thành</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year1.metrics.checkContractsCompleted} ({ (comparisonData.year1.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
+                                    <td className="px-5 py-4 border-b border-slate-200 bg-white text-sm text-center text-slate-900">{comparisonData.year2.metrics.checkContractsCompleted} ({ (comparisonData.year2.metrics.checkContractsCompleted / schools.length * 100).toFixed(1) }%)</td>
                                 </tr>
                             </tbody>
                         </table>

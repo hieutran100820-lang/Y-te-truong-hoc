@@ -56,8 +56,8 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolea
         onClick={onClick}
         className={`flex items-center p-3 my-1 rounded-lg cursor-pointer transition-colors duration-200 ${
             isActive 
-            ? 'bg-brand-blue text-white shadow-md' 
-            : 'text-gray-600 hover:bg-brand-blue-light hover:text-brand-blue-dark'
+            ? 'bg-slate-700 text-white' 
+            : 'text-slate-300 hover:bg-slate-700 hover:text-white'
         }`}
     >
         {icon}
@@ -70,15 +70,15 @@ const Header: React.FC<{
     onYearChange: (id: number) => void;
     schoolYears: SchoolYear[];
 }> = ({ selectedYear, onYearChange, schoolYears }) => (
-    <header className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
-        <h1 className="text-2xl font-bold text-brand-blue-dark">Quản lý Y tế Học đường</h1>
+    <header className="bg-slate-100/80 backdrop-blur-sm border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-10">
+        <h1 className="text-2xl font-bold text-slate-800">Quản lý Y tế Học đường</h1>
         <div className="flex items-center">
-            <label htmlFor="school-year" className="mr-2 font-semibold text-gray-600">Năm học:</label>
+            <label htmlFor="school-year" className="mr-2 font-semibold text-slate-600">Năm học:</label>
             <select
                 id="school-year"
                 value={selectedYear?.id}
                 onChange={(e) => onYearChange(Number(e.target.value))}
-                className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block w-full p-2.5"
+                className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand focus:border-brand block w-full p-2.5"
             >
                 {schoolYears.map((sy) => (
                     <option key={sy.id} value={sy.id}>{sy.year} {sy.isCurrent && '(Hiện tại)'}</option>
@@ -220,11 +220,11 @@ const App: React.FC = () => {
     return (
         <>
             {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
-            <div className="flex h-screen bg-brand-gray-light">
-                <aside className="w-64 bg-white shadow-lg flex flex-col">
-                    <div className="p-6 text-center border-b">
-                         <h2 className="text-xl font-bold text-brand-blue-dark">Admin Portal</h2>
-                         <p className="text-sm text-gray-500 mt-1">Xin chào, {currentUser.name}</p>
+            <div className="flex h-screen bg-slate-100">
+                <aside className="w-64 bg-slate-800 flex flex-col">
+                    <div className="p-6 text-center border-b border-slate-700">
+                         <h2 className="text-xl font-bold text-white">Admin Portal</h2>
+                         <p className="text-sm text-slate-400 mt-1">Xin chào, {currentUser.name}</p>
                     </div>
                     <nav className="flex-grow p-4 flex flex-col justify-between">
                         <ul>
@@ -239,14 +239,14 @@ const App: React.FC = () => {
                             )}
                         </ul>
                          <div>
-                            <hr className="my-2 border-gray-200" />
+                            <hr className="my-2 border-slate-700" />
                             <NavItem label="Đăng xuất" icon={<LogoutIcon className="w-6 h-6" />} isActive={false} onClick={handleLogout} />
                         </div>
                     </nav>
                 </aside>
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Header selectedYear={selectedYear} onYearChange={handleYearChange} schoolYears={schoolYears} />
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray p-8">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
                         {renderPage()}
                     </main>
                 </div>

@@ -33,6 +33,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
     const totalStudents = recordsForUserAndYear.reduce((sum, r) => sum + (Number(r.dynamicData?.['student_count']) || 0), 0);
     const contractsSigned = recordsForUserAndYear.filter(r => r.dynamicData?.['care_contract_status'] === 'Đã ký').length;
     const healthChecksDone = recordsForUserAndYear.filter(r => r.dynamicData?.['check_contract_completed'] === true).length;
+    const collectiveKitchens = recordsForUserAndYear.filter(r => r.dynamicData?.['checklist_collective_kitchen'] === true).length;
+    const inspectedSchools = recordsForUserAndYear.filter(r => r.dynamicData?.['checklist_inspected'] === true).length;
+    const activityPlans = recordsForUserAndYear.filter(r => r.dynamicData?.['checklist_activity_plan'] === true).length;
+    const steeringCommittees = recordsForUserAndYear.filter(r => r.dynamicData?.['checklist_steering_committee'] === true).length;
 
     // Prepare chart data based on filtered schools
     const barChartData = schoolsForUser.map(school => {
@@ -126,8 +130,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            <h2 className="text-3xl font-bold text-gray-800">Dashboard: Năm học {selectedYear.year}</h2>
+        <div className="space-y-6 animate-fade-in">
+            <h2 className="text-3xl font-bold text-slate-800">Dashboard: Năm học {selectedYear.year}</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <DashboardCard title="Tổng số trường" value={totalSchools} description="Các trường được phân công">
@@ -140,6 +144,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
                    <ChartBarIcon className="w-8 h-8"/>
                 </DashboardCard>
                 <DashboardCard title="KSK đã tổ chức" value={`${healthChecksDone} / ${totalSchools}`} description={totalSchools > 0 ? `${((healthChecksDone / totalSchools) * 100).toFixed(0)}%` : '0%'}>
+                    <ChartBarIcon className="w-8 h-8"/>
+                </DashboardCard>
+                <DashboardCard title="Có bếp ăn tập thể" value={`${collectiveKitchens} / ${totalSchools}`} description={totalSchools > 0 ? `${((collectiveKitchens / totalSchools) * 100).toFixed(0)}%` : '0%'}>
+                    <ChartBarIcon className="w-8 h-8"/>
+                </DashboardCard>
+                <DashboardCard title="Đã được kiểm tra" value={`${inspectedSchools} / ${totalSchools}`} description={totalSchools > 0 ? `${((inspectedSchools / totalSchools) * 100).toFixed(0)}%` : '0%'}>
+                    <ChartBarIcon className="w-8 h-8"/>
+                </DashboardCard>
+                <DashboardCard title="Có KH hoạt động" value={`${activityPlans} / ${totalSchools}`} description={totalSchools > 0 ? `${((activityPlans / totalSchools) * 100).toFixed(0)}%` : '0%'}>
+                    <ChartBarIcon className="w-8 h-8"/>
+                </DashboardCard>
+                <DashboardCard title="Có Ban chỉ đạo" value={`${steeringCommittees} / ${totalSchools}`} description={totalSchools > 0 ? `${((steeringCommittees / totalSchools) * 100).toFixed(0)}%` : '0%'}>
                     <ChartBarIcon className="w-8 h-8"/>
                 </DashboardCard>
 
@@ -160,9 +176,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
                 })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Số lượng học sinh theo trường</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-semibold text-slate-800 mb-4">Số lượng học sinh theo trường</h3>
                      <ResponsiveContainer width="100%" height={500}>
                         <BarChart
                             data={barChartData}
@@ -191,8 +207,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Số lượng học sinh theo phân cấp</h3>
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-semibold text-slate-800 mb-4">Số lượng học sinh theo phân cấp</h3>
                     <ResponsiveContainer width="100%" height={400}>
                         <PieChart>
                             <Pie
@@ -215,8 +231,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                     <h3 className="text-xl font-semibold text-gray-800 mb-4">Cảnh báo nhanh</h3>
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                     <h3 className="text-xl font-semibold text-slate-800 mb-4">Cảnh báo nhanh</h3>
                      <div className="space-y-4">
                         {schoolsWithoutActivityPlan.length > 0 && (
                             <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg overflow-hidden transition-all duration-300">
@@ -288,7 +304,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ selectedYear, currentUser
                             </div>
                         )}
                         {schoolsWithoutActivityPlan.length === 0 && schoolsWithoutCareContract.length === 0 && schoolsWithoutHealthCheck.length === 0 && (
-                            <div className="text-center text-gray-500 py-4">
+                            <div className="text-center text-slate-500 py-4">
                                 <p>Tuyệt vời! Không có cảnh báo nào.</p>
                             </div>
                         )}

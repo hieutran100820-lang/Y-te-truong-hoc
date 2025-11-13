@@ -29,23 +29,23 @@ const DetailItem: React.FC<{
     if (typeof value === 'number' && type !== 'text') {
         return value.toLocaleString('vi-VN');
     }
-    if (value === undefined || value === null || value === '') return <span className="text-gray-400 italic">Chưa có</span>
+    if (value === undefined || value === null || value === '') return <span className="text-slate-400 italic">Chưa có</span>
     return String(value);
   };
 
   const renderInput = () => {
-    const commonClasses = "mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm text-black focus:outline-none sm:text-sm";
-    const incompleteClasses = isIncomplete ? "border-red-400 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-brand-blue focus:border-brand-blue";
+    const commonClasses = "mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm text-slate-900 focus:outline-none sm:text-sm";
+    const incompleteClasses = isIncomplete ? "border-red-400 focus:ring-red-500 focus:border-red-500" : "border-slate-300 focus:ring-brand focus:border-brand";
 
     switch (type) {
       case 'checkbox':
-        return <input type="checkbox" name={name} checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5 text-brand-blue rounded focus:ring-brand-blue" />;
+        return <input type="checkbox" name={name} checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5 text-brand rounded focus:ring-brand" />;
       case 'number':
         return <input type="number" name={name} value={value as number} onChange={(e) => onChange(Number(e.target.value))} className={`${commonClasses} ${incompleteClasses}`} />;
       case 'select':
       case 'droplist':
         return (
-          <select name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className={`mt-1 block w-full pl-3 pr-10 py-2 bg-white border rounded-md shadow-sm text-black focus:outline-none sm:text-sm ${incompleteClasses}`}>
+          <select name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className={`mt-1 block w-full pl-3 pr-10 py-2 bg-white border rounded-md shadow-sm text-slate-900 focus:outline-none sm:text-sm ${incompleteClasses}`}>
             <option value="">-- Chọn --</option>
             {options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
@@ -57,8 +57,8 @@ const DetailItem: React.FC<{
 
   return (
     <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-      <dt className={`text-sm font-medium flex items-center transition-colors ${isEditing && isIncomplete ? 'text-red-600' : 'text-gray-500'}`}>{label}</dt>
-      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+      <dt className={`text-sm font-medium flex items-center transition-colors ${isEditing && isIncomplete ? 'text-red-600' : 'text-slate-500'}`}>{label}</dt>
+      <dd className="mt-1 text-sm text-slate-900 sm:mt-0 sm:col-span-2">
         {isEditing ? renderInput() : renderValue()}
       </dd>
     </div>
@@ -224,8 +224,8 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
     
     if (!record) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-md text-center">
-                <p className="text-gray-500">Đang tải dữ liệu...</p>
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm text-center">
+                <p className="text-slate-500">Đang tải dữ liệu...</p>
             </div>
         );
     }
@@ -243,8 +243,8 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
             onClick={() => setActiveTab(tabKey)}
             className={`relative px-3 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none whitespace-nowrap ${
                 activeTab === tabKey
-                ? 'border-b-2 border-brand-blue text-brand-blue font-semibold'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-brand text-brand font-semibold'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
         >
             {label}
@@ -256,7 +256,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
       const fieldsForTab = dynamicFields.filter(f => f.tab === activeTab);
       if (fieldsForTab.length === 0 && !['careContract', 'checkContract'].includes(activeTab)) {
         return (
-            <div className="py-4 text-center text-gray-500">
+            <div className="py-4 text-center text-slate-500">
                 Không có trường thông tin nào được cấu hình cho tab này.
             </div>
         );
@@ -283,7 +283,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                     const attachment = record.attachments?.find(att => att.fieldName === field.name);
                     const isFieldIncomplete = completionStatus.incompleteFieldNames.includes(field.name);
                     return (
-                        <div key={field.id} className="border-b last:border-b-0">
+                        <div key={field.id} className="border-b border-slate-200 last:border-b-0">
                             <DetailItem
                                 label={field.label}
                                 value={record.dynamicData?.[field.name] ?? getDefaultValue(field.type)}
@@ -296,10 +296,10 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                             />
                             {activeTab === 'checklist' && (
                                 <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                                    <dt className={`text-sm font-medium transition-colors ${isEditing && isFieldIncomplete ? 'text-red-600' : 'text-gray-400'}`}>Tệp đính kèm (bắt buộc)</dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                    <dt className={`text-sm font-medium transition-colors ${isEditing && isFieldIncomplete ? 'text-red-600' : 'text-slate-400'}`}>Tệp đính kèm (bắt buộc)</dt>
+                                    <dd className="mt-1 text-sm text-slate-900 sm:mt-0 sm:col-span-2">
                                         {attachment ? (
-                                            <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                            <div className="flex items-center justify-between p-2 bg-slate-100 rounded-md">
                                                 <a href={attachment.fileData} download={attachment.fileName} className="flex items-center text-blue-600 hover:underline truncate">
                                                     <PaperclipIcon className="w-4 h-4 mr-2 flex-shrink-0" />
                                                     <span className="truncate">{attachment.fileName}</span>
@@ -312,12 +312,12 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                                             </div>
                                         ) : (
                                             isEditing ? (
-                                                <button onClick={() => handleAttachClick(field.name)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isFieldIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-gray-300 text-brand-blue hover:text-brand-blue-dark hover:border-brand-blue'}`}>
+                                                <button onClick={() => handleAttachClick(field.name)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isFieldIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-slate-300 text-brand hover:text-brand-dark hover:border-brand'}`}>
                                                     <PaperclipIcon className="w-4 h-4 mr-2"/>
                                                     Đính kèm tệp
                                                 </button>
                                             ) : (
-                                                <span className="text-gray-400 italic">Chưa có</span>
+                                                <span className="text-slate-400 italic">Chưa có</span>
                                             )
                                         )}
                                     </dd>
@@ -329,12 +329,12 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
             </dl>
             
             {(activeTab === 'careContract' || activeTab === 'checkContract') && (
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                        <dt className={`text-sm font-medium transition-colors ${isEditing && isContractFileIncomplete ? 'text-red-600' : 'text-gray-500'}`}>Đính kèm Hợp đồng</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        <dt className={`text-sm font-medium transition-colors ${isEditing && isContractFileIncomplete ? 'text-red-600' : 'text-slate-500'}`}>Đính kèm Hợp đồng</dt>
+                        <dd className="mt-1 text-sm text-slate-900 sm:mt-0 sm:col-span-2">
                             {contractAttachment ? (
-                                <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                <div className="flex items-center justify-between p-2 bg-slate-100 rounded-md">
                                     <a href={contractAttachment.fileData} download={contractAttachment.fileName} className="flex items-center text-blue-600 hover:underline truncate">
                                         <PaperclipIcon className="w-4 h-4 mr-2 flex-shrink-0" />
                                         <span className="truncate">{contractAttachment.fileName}</span>
@@ -347,12 +347,12 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                                 </div>
                             ) : (
                                 isEditing ? (
-                                     <button onClick={() => handleAttachClick(contractFieldName)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isContractFileIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-gray-300 text-brand-blue hover:text-brand-blue-dark hover:border-brand-blue'}`}>
+                                     <button onClick={() => handleAttachClick(contractFieldName)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isContractFileIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-slate-300 text-brand hover:text-brand-dark hover:border-brand'}`}>
                                         <PaperclipIcon className="w-4 h-4 mr-2"/>
                                         Đính kèm tệp
                                     </button>
                                 ) : (
-                                    <span className="text-gray-400 italic">Chưa có</span>
+                                    <span className="text-slate-400 italic">Chưa có</span>
                                 )
                             )}
                         </dd>
@@ -364,28 +364,28 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
     }
 
     return (
-        <div className="bg-white rounded-lg shadow-md animate-fade-in">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 animate-fade-in">
              <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
             />
-            <div className="p-6 border-b">
+            <div className="p-6 border-b border-slate-200">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="text-2xl font-bold text-gray-800">{school.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">Năm học: {selectedYear.year}</p>
+                        <h3 className="text-2xl font-bold text-slate-800">{school.name}</h3>
+                        <p className="text-sm text-slate-500 mt-1">Năm học: {selectedYear.year}</p>
                     </div>
                      {!selectedYear.isLocked && (
                         <div className="flex space-x-2 flex-shrink-0 ml-4">
                              {isEditing ? (
                                 <>
                                     <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300">Lưu</button>
-                                    <button onClick={handleCancel} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition-colors duration-300">Hủy</button>
+                                    <button onClick={handleCancel} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded transition-colors duration-300">Hủy</button>
                                 </>
                             ) : (
-                                <button onClick={() => setIsEditing(true)} className="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-4 rounded transition-colors duration-300">Chỉnh sửa</button>
+                                <button onClick={() => setIsEditing(true)} className="bg-brand hover:bg-brand-dark text-white font-bold py-2 px-4 rounded transition-colors duration-300">Chỉnh sửa</button>
                             )}
                         </div>
                     )}
@@ -409,7 +409,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                 </div>
             )}
 
-            <div className="border-b border-gray-200">
+            <div className="border-b border-slate-200">
                 <nav className="flex space-x-1 sm:space-x-4 px-6 -mb-px overflow-x-auto">
                      {Object.entries(TABS).map(([key, label]) => (
                         <TabButton key={key} tabKey={key} label={label} isIncomplete={!isEditing && completionStatus.incompleteTabs.includes(key)} />
