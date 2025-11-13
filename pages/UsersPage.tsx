@@ -8,6 +8,7 @@ interface UsersPageProps {
     users: User[];
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     schools: School[];
+    showNotification: (message: string) => void;
 }
 
 const initialFormState: Omit<User, 'id'> & { id?: number; password?: string } = {
@@ -19,7 +20,7 @@ const initialFormState: Omit<User, 'id'> & { id?: number; password?: string } = 
     assignedSchoolIds: [],
 };
 
-const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools }) => {
+const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools, showNotification }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -89,6 +90,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools }) => {
 
             const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
             setUsers(updatedUsers);
+            showNotification(`Thông tin người dùng "${updatedUser.name}" đã được cập nhật.`);
 
         } else { // Adding
             if (!formData.password) {
@@ -105,6 +107,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools }) => {
                 assignedSchoolIds: formData.role === 'user' ? (formData.assignedSchoolIds || []) : [],
             };
             setUsers([...users, newUser]);
+            showNotification(`Người dùng "${newUser.name}" đã được tạo thành công.`);
         }
         closeModal();
     };
@@ -114,6 +117,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ users, setUsers, schools }) => {
         
         const updatedUsers = users.filter(u => u.id !== currentUser.id);
         setUsers(updatedUsers);
+        showNotification(`Người dùng "${currentUser.name}" đã được xóa.`);
         
         closeModal();
     };

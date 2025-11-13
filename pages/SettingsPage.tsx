@@ -12,6 +12,7 @@ interface SettingsPageProps {
   healthRecords: HealthRecord[];
   setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
   seedDatabase: () => void;
+  showNotification: (message: string) => void;
 }
 
 const TABS: { [key: string]: string } = {
@@ -30,7 +31,7 @@ const initialFieldState = {
     options: ''
 };
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields, healthRecords, setHealthRecords, seedDatabase }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields, healthRecords, setHealthRecords, seedDatabase, showNotification }) => {
     const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
     const [yearToEdit, setYearToEdit] = useState<SchoolYear | null>(null);
     const [yearToLock, setYearToLock] = useState<SchoolYear | null>(null);
@@ -71,6 +72,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
             isLocked: false,
         };
         setSchoolYears([...schoolYears, newYear]);
+        showNotification(`Năm học ${newYearName} đã được tạo thành công.`);
         setIsAddYearModalOpen(false);
     };
     
@@ -94,15 +96,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         setSchoolYears(schoolYears.map(sy => 
             sy.id === yearToEdit.id ? { ...sy, year: editedYearName } : sy
         ));
+        showNotification(`Năm học đã được cập nhật thành ${editedYearName}.`);
         setYearToEdit(null);
     };
 
     const handleSetCurrent = (yearId: number) => {
-        if (window.confirm('Bạn có chắc chắn muốn đặt năm học này làm năm học hiện tại?')) {
-            setSchoolYears(schoolYears.map(sy => ({
+        const year = schoolYears.find(sy => sy.id === yearId);
+        if (year) {
+             setSchoolYears(schoolYears.map(sy => ({
                 ...sy,
                 isCurrent: sy.id === yearId,
             })));
+            showNotification(`Năm học ${year.year} đã được đặt làm năm học hiện tại.`);
         }
     };
     
@@ -111,6 +116,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         setSchoolYears(schoolYears.map(sy => 
             sy.id === yearToLock.id ? { ...sy, isLocked: true } : sy
         ));
+        showNotification(`Năm học ${yearToLock.year} đã được khóa.`);
         setYearToLock(null);
     };
 
@@ -119,6 +125,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         setSchoolYears(schoolYears.map(sy =>
             sy.id === yearToUnlock.id ? { ...sy, isLocked: false } : sy
         ));
+        showNotification(`Năm học ${yearToUnlock.year} đã được mở khóa.`);
         setYearToUnlock(null);
     };
 
@@ -130,6 +137,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         const updatedHealthRecords = healthRecords.filter(hr => hr.schoolYearId !== yearToDelete.id);
         setHealthRecords(updatedHealthRecords);
 
+        showNotification(`Năm học ${yearToDelete.year} đã được xóa.`);
         setYearToDelete(null);
     };
 
@@ -175,6 +183,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
 
                 return updatedField;
             }));
+            showNotification(`Trường "${fieldData.label}" đã được cập nhật.`);
         } else { // Adding new field
              if (dynamicFields.some(f => f.tab === selectedConfigTab && f.name === fieldName)) {
                 alert('Một trường với tên tương tự đã tồn tại trong tab này.');
@@ -196,6 +205,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
             }
 
             setDynamicFields([...dynamicFields, newField]);
+            showNotification(`Trường "${fieldData.label}" đã được thêm thành công.`);
         }
         setIsFieldModalOpen(false);
     };
@@ -203,6 +213,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
     const handleConfirmDeleteField = () => {
         if (!fieldToDelete) return;
         setDynamicFields(dynamicFields.filter(f => f.id !== fieldToDelete.id));
+        showNotification(`Trường "${fieldToDelete.label}" đã được xóa.`);
         setFieldToDelete(null);
     };
 

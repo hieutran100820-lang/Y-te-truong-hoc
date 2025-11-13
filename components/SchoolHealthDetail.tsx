@@ -9,6 +9,7 @@ interface SchoolHealthDetailProps {
   dynamicFields: DynamicField[];
   healthRecords: HealthRecord[];
   setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
+  showNotification: (message: string) => void;
 }
 
 const DetailItem: React.FC<{
@@ -19,7 +20,8 @@ const DetailItem: React.FC<{
   type?: 'text' | 'number' | 'select' | 'checkbox' | 'droplist';
   options?: string[];
   name: string;
-}> = ({ label, value, isEditing, onChange, type = 'text', options, name }) => {
+  isIncomplete: boolean;
+}> = ({ label, value, isEditing, onChange, type = 'text', options, name, isIncomplete }) => {
   const renderValue = () => {
     if (type === 'checkbox') {
       return value ? <span className="text-green-600 font-semibold">Có</span> : <span className="text-red-600 font-semibold">Không</span>;
@@ -27,31 +29,35 @@ const DetailItem: React.FC<{
     if (typeof value === 'number' && type !== 'text') {
         return value.toLocaleString('vi-VN');
     }
-    if (value === undefined || value === null || value === '') return <span className="text-gray-400">N/A</span>
+    if (value === undefined || value === null || value === '') return <span className="text-gray-400 italic">Chưa có</span>
     return String(value);
   };
 
   const renderInput = () => {
+    const commonClasses = "mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm text-black focus:outline-none sm:text-sm";
+    const incompleteClasses = isIncomplete ? "border-red-400 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-brand-blue focus:border-brand-blue";
+
     switch (type) {
       case 'checkbox':
         return <input type="checkbox" name={name} checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5 text-brand-blue rounded focus:ring-brand-blue" />;
       case 'number':
-        return <input type="number" name={name} value={value as number} onChange={(e) => onChange(Number(e.target.value))} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm" />;
+        return <input type="number" name={name} value={value as number} onChange={(e) => onChange(Number(e.target.value))} className={`${commonClasses} ${incompleteClasses}`} />;
       case 'select':
       case 'droplist':
         return (
-          <select name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
+          <select name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className={`mt-1 block w-full pl-3 pr-10 py-2 bg-white border rounded-md shadow-sm text-black focus:outline-none sm:text-sm ${incompleteClasses}`}>
+            <option value="">-- Chọn --</option>
             {options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         );
       default:
-        return <input type="text" name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-black focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm" />;
+        return <input type="text" name={name} value={value as string} onChange={(e) => onChange(e.target.value)} className={`${commonClasses} ${incompleteClasses}`} />;
     }
   };
 
   return (
     <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-      <dt className="text-sm font-medium text-gray-500 flex items-center">{label}</dt>
+      <dt className={`text-sm font-medium flex items-center transition-colors ${isEditing && isIncomplete ? 'text-red-600' : 'text-gray-500'}`}>{label}</dt>
       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
         {isEditing ? renderInput() : renderValue()}
       </dd>
@@ -60,14 +66,68 @@ const DetailItem: React.FC<{
 };
 
 
-const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selectedYear, dynamicFields, healthRecords, setHealthRecords }) => {
+const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selectedYear, dynamicFields, healthRecords, setHealthRecords, showNotification }) => {
     const [record, setRecord] = useState<HealthRecord | null>(null);
     const [originalRecord, setOriginalRecord] = useState<HealthRecord | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
+    const [completionStatus, setCompletionStatus] = useState<{ incompleteFieldNames: string[], incompleteTabs: string[] }>({ incompleteFieldNames: [], incompleteTabs: [] });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [fieldToAttach, setFieldToAttach] = useState<string | null>(null);
+
+    const calculateCompletionStatus = (record: HealthRecord | null, dynamicFields: DynamicField[]) => {
+        if (!record) return { incompleteFieldNames: [], incompleteTabs: [] };
+        
+        const incompleteFieldNames: string[] = [];
+        const incompleteTabs = new Set<string>();
+        const isEmpty = (value: any) => value === undefined || value === null || value === '';
+
+        dynamicFields.forEach(field => {
+            const value = record.dynamicData?.[field.name];
+            let isComplete = true;
+
+            if (field.tab === 'checklist') {
+                const hasAttachment = record.attachments?.some(a => a.fieldName === field.name);
+                if (value !== true || !hasAttachment) {
+                    isComplete = false;
+                }
+            } else {
+                 if (field.name === 'student_count') {
+                    // For student_count, 0 is also considered incomplete.
+                    if (isEmpty(value) || value === 0) {
+                        isComplete = false;
+                    }
+                } else {
+                    if (isEmpty(value)) {
+                        isComplete = false;
+                    }
+                }
+            }
+            
+            if (!isComplete) {
+                incompleteFieldNames.push(field.name);
+                incompleteTabs.add(field.tab);
+            }
+        });
+
+        const careContractAttachment = record.attachments?.find(att => att.fieldName === 'careContract_contract_file');
+        if (!careContractAttachment) {
+            incompleteFieldNames.push('careContract_contract_file');
+            incompleteTabs.add('careContract');
+        }
+
+        const checkContractAttachment = record.attachments?.find(att => att.fieldName === 'checkContract_contract_file');
+        if (!checkContractAttachment) {
+            incompleteFieldNames.push('checkContract_contract_file');
+            incompleteTabs.add('checkContract');
+        }
+
+        return {
+            incompleteFieldNames,
+            incompleteTabs: Array.from(incompleteTabs),
+        };
+    };
 
     useEffect(() => {
         const foundRecord = healthRecords.find(r => r.schoolId === school.id && r.schoolYearId === selectedYear.id);
@@ -83,18 +143,26 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
         if (!newRecord.attachments) newRecord.attachments = [];
         setRecord(newRecord);
         setOriginalRecord(JSON.parse(JSON.stringify(newRecord)));
+        
+        const status = calculateCompletionStatus(newRecord, dynamicFields);
+        setCompletionStatus(status);
+
         setIsEditing(false);
         setActiveTab('overview');
-    }, [school, selectedYear, healthRecords]);
+    }, [school, selectedYear, healthRecords, dynamicFields]);
+
+    const updateRecordAndStatus = (updatedRecord: HealthRecord) => {
+        setRecord(updatedRecord);
+        const status = calculateCompletionStatus(updatedRecord, dynamicFields);
+        setCompletionStatus(status);
+    };
 
     const handleInputChange = (fieldName: string, value: any) => {
-        setRecord(prev => {
-            if (!prev) return null;
-            const newRecord = JSON.parse(JSON.stringify(prev));
-            if (!newRecord.dynamicData) newRecord.dynamicData = {};
-            newRecord.dynamicData[fieldName] = value;
-            return newRecord;
-        });
+        if (!record) return;
+        const newRecord = JSON.parse(JSON.stringify(record));
+        if (!newRecord.dynamicData) newRecord.dynamicData = {};
+        newRecord.dynamicData[fieldName] = value;
+        updateRecordAndStatus(newRecord);
     };
 
     const handleSave = () => {
@@ -108,13 +176,15 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                 updatedRecords = [...healthRecords, record];
             }
             setHealthRecords(updatedRecords);
-            alert('Đã lưu thông tin thành công!');
+            showNotification('Đã lưu thông tin thành công!');
         }
         setIsEditing(false);
     };
 
     const handleCancel = () => {
         setRecord(originalRecord);
+        const status = calculateCompletionStatus(originalRecord, dynamicFields);
+        setCompletionStatus(status);
         setIsEditing(false);
     }
 
@@ -125,9 +195,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file && fieldToAttach) {
-            // In a real app, you would upload the file to a storage service
-            // and get a URL. Here we read it as a data URL for client-side download.
+        if (file && fieldToAttach && record) {
             const reader = new FileReader();
             const fieldNameForAttachment = fieldToAttach;
 
@@ -139,27 +207,19 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                     fileData: fileData,
                     fieldName: fieldNameForAttachment,
                 };
-
-                setRecord(prev => {
-                    if (!prev) return null;
-                    const updatedAttachments = [...(prev.attachments || []), newAttachment];
-                    return { ...prev, attachments: updatedAttachments };
-                });
+                const updatedAttachments = [...(record.attachments || []), newAttachment];
+                updateRecordAndStatus({ ...record, attachments: updatedAttachments });
             };
-
             reader.readAsDataURL(file);
         }
-        // Reset the input value to allow selecting the same file again
         if (event.target) event.target.value = '';
         setFieldToAttach(null);
     };
 
     const handleRemoveAttachment = (attachmentId: string) => {
-        setRecord(prev => {
-            if (!prev) return null;
-            const updatedAttachments = (prev.attachments || []).filter(att => att.id !== attachmentId);
-            return { ...prev, attachments: updatedAttachments };
-        });
+        if (!record) return;
+        const updatedAttachments = (record.attachments || []).filter(att => att.id !== attachmentId);
+        updateRecordAndStatus({ ...record, attachments: updatedAttachments });
     };
     
     if (!record) {
@@ -178,16 +238,17 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
         checklist: 'Hoạt động (Checklist)'
     };
     
-    const TabButton: React.FC<{tabKey: string, label: string}> = ({tabKey, label}) => (
+    const TabButton: React.FC<{tabKey: string, label: string, isIncomplete: boolean}> = ({tabKey, label, isIncomplete}) => (
         <button
             onClick={() => setActiveTab(tabKey)}
-            className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none whitespace-nowrap ${
+            className={`relative px-3 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none whitespace-nowrap ${
                 activeTab === tabKey
                 ? 'border-b-2 border-brand-blue text-brand-blue font-semibold'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
         >
             {label}
+            {isIncomplete && <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-400" title="Tab này có thông tin chưa hoàn thiện"></span>}
         </button>
     );
 
@@ -213,12 +274,14 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
 
       const contractFieldName = `${activeTab}_contract_file`;
       const contractAttachment = record.attachments?.find(att => att.fieldName === contractFieldName);
+      const isContractFileIncomplete = completionStatus.incompleteFieldNames.includes(contractFieldName);
 
       return (
         <>
             <dl>
                 {fieldsForTab.map(field => {
                     const attachment = record.attachments?.find(att => att.fieldName === field.name);
+                    const isFieldIncomplete = completionStatus.incompleteFieldNames.includes(field.name);
                     return (
                         <div key={field.id} className="border-b last:border-b-0">
                             <DetailItem
@@ -229,10 +292,11 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                                 type={field.type}
                                 options={field.options}
                                 name={field.name}
+                                isIncomplete={isFieldIncomplete}
                             />
                             {activeTab === 'checklist' && (
                                 <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                                    <dt className="text-sm font-medium text-gray-400">Tệp đính kèm</dt>
+                                    <dt className={`text-sm font-medium transition-colors ${isEditing && isFieldIncomplete ? 'text-red-600' : 'text-gray-400'}`}>Tệp đính kèm (bắt buộc)</dt>
                                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                                         {attachment ? (
                                             <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
@@ -248,12 +312,12 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                                             </div>
                                         ) : (
                                             isEditing ? (
-                                                <button onClick={() => handleAttachClick(field.name)} className="flex items-center text-sm text-brand-blue hover:text-brand-blue-dark font-medium py-1 px-2 rounded-md border-2 border-dashed border-gray-300 hover:border-brand-blue transition-colors">
+                                                <button onClick={() => handleAttachClick(field.name)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isFieldIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-gray-300 text-brand-blue hover:text-brand-blue-dark hover:border-brand-blue'}`}>
                                                     <PaperclipIcon className="w-4 h-4 mr-2"/>
                                                     Đính kèm tệp
                                                 </button>
                                             ) : (
-                                                <span className="text-gray-400">Chưa có</span>
+                                                <span className="text-gray-400 italic">Chưa có</span>
                                             )
                                         )}
                                     </dd>
@@ -267,7 +331,7 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
             {(activeTab === 'careContract' || activeTab === 'checkContract') && (
                 <div className="mt-4 pt-4 border-t">
                     <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                        <dt className="text-sm font-medium text-gray-500">Đính kèm Hợp đồng</dt>
+                        <dt className={`text-sm font-medium transition-colors ${isEditing && isContractFileIncomplete ? 'text-red-600' : 'text-gray-500'}`}>Đính kèm Hợp đồng</dt>
                         <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                             {contractAttachment ? (
                                 <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
@@ -283,12 +347,12 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                                 </div>
                             ) : (
                                 isEditing ? (
-                                    <button onClick={() => handleAttachClick(contractFieldName)} className="flex items-center text-sm text-brand-blue hover:text-brand-blue-dark font-medium py-1 px-2 rounded-md border-2 border-dashed border-gray-300 hover:border-brand-blue transition-colors">
+                                     <button onClick={() => handleAttachClick(contractFieldName)} className={`flex items-center text-sm font-medium py-1 px-2 rounded-md border-2 border-dashed transition-colors ${isContractFileIncomplete ? 'border-red-400 text-red-600 hover:border-red-500' : 'border-gray-300 text-brand-blue hover:text-brand-blue-dark hover:border-brand-blue'}`}>
                                         <PaperclipIcon className="w-4 h-4 mr-2"/>
                                         Đính kèm tệp
                                     </button>
                                 ) : (
-                                    <span className="text-gray-400">Chưa có</span>
+                                    <span className="text-gray-400 italic">Chưa có</span>
                                 )
                             )}
                         </dd>
@@ -328,10 +392,27 @@ const SchoolHealthDetail: React.FC<SchoolHealthDetailProps> = ({ school, selecte
                 </div>
             </div>
             
+            {!isEditing && completionStatus.incompleteFieldNames.length > 0 && (
+                <div className="p-4 m-6 mb-0 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                                <span className="font-bold">Cảnh báo:</span> Còn {completionStatus.incompleteFieldNames.length} trường thông tin chưa hoàn thiện. Vui lòng nhấn "Chỉnh sửa" để cập nhật.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="border-b border-gray-200">
                 <nav className="flex space-x-1 sm:space-x-4 px-6 -mb-px overflow-x-auto">
                      {Object.entries(TABS).map(([key, label]) => (
-                        <TabButton key={key} tabKey={key} label={label} />
+                        <TabButton key={key} tabKey={key} label={label} isIncomplete={!isEditing && completionStatus.incompleteTabs.includes(key)} />
                      ))}
                 </nav>
             </div>

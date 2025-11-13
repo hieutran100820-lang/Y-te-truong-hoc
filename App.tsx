@@ -21,6 +21,36 @@ import { ref, onValue, set, get } from "firebase/database";
 
 type Page = 'dashboard' | 'schools' | 'reports' | 'users' | 'settings';
 
+const Notification: React.FC<{ message: string; onClose: () => void; }> = ({ message, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000); // Auto-close after 3 seconds
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-5 right-5 z-50 bg-green-500 text-white py-3 px-6 rounded-lg shadow-lg animate-slide-in-down flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-4 text-white hover:text-green-100 font-bold text-xl leading-none">&times;</button>
+       <style>{`
+        @keyframes slide-in-down {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in-down {
+          animation: slide-in-down 0.3s ease-out forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+
 const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void; }> = ({ icon, label, isActive, onClick }) => (
     <li 
         onClick={onClick}
@@ -63,6 +93,7 @@ const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
     const [selectedYear, setSelectedYear] = useState<SchoolYear | undefined>();
     const [isDataLoaded, setIsDataLoaded] = useState(false);
+    const [notification, setNotification] = useState<string | null>(null);
 
     // Centralized state management
     const [schoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
@@ -70,6 +101,13 @@ const App: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+    
+    const showNotification = (message: string) => {
+        setNotification(message);
+        setTimeout(() => {
+            setNotification(null);
+        }, 3000); // Hide after 3 seconds
+    };
 
     // Function to seed initial data if database is empty
     const seedDatabase = () => {
@@ -81,8 +119,8 @@ const App: React.FC = () => {
             healthRecords: INITIAL_HEALTH_RECORDS,
         };
         set(ref(database), initialData)
-            .then(() => alert("Dữ liệu đã được reset thành công về trạng thái ban đầu! Ứng dụng sẽ tự động làm mới."))
-            .catch((error) => alert(`Lỗi khi reset dữ liệu: ${error.message}`));
+            .then(() => showNotification("Dữ liệu đã được reset thành công!"))
+            .catch((error) => showNotification(`Lỗi khi reset dữ liệu: ${error.message}`));
     };
 
     // Effect to load all data from Firebase and listen for real-time updates
@@ -167,10 +205,10 @@ const App: React.FC = () => {
 
         switch (currentPage) {
             case 'dashboard': return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
-            case 'schools': return <SchoolsPage selectedYear={selectedYear} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} setSchools={updateSchools} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} />;
+            case 'schools': return <SchoolsPage selectedYear={selectedYear} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} setSchools={updateSchools} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} showNotification={showNotification} />;
             case 'reports': return <ReportsPage schoolYears={schoolYears} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
-            case 'users': return currentUser.role === 'admin' ? <UsersPage users={users} setUsers={updateUsers} schools={schools} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
-            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={updateSchoolYears} dynamicFields={dynamicFields} setDynamicFields={updateDynamicFields} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} seedDatabase={seedDatabase} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
+            case 'users': return currentUser.role === 'admin' ? <UsersPage users={users} setUsers={updateUsers} schools={schools} showNotification={showNotification} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
+            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={updateSchoolYears} dynamicFields={dynamicFields} setDynamicFields={updateDynamicFields} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} seedDatabase={seedDatabase} showNotification={showNotification} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
             default: return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
         }
     };
@@ -180,37 +218,40 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="flex h-screen bg-brand-gray-light">
-            <aside className="w-64 bg-white shadow-lg flex flex-col">
-                <div className="p-6 text-center border-b">
-                     <h2 className="text-xl font-bold text-brand-blue-dark">Admin Portal</h2>
-                     <p className="text-sm text-gray-500 mt-1">Xin chào, {currentUser.name}</p>
-                </div>
-                <nav className="flex-grow p-4 flex flex-col justify-between">
-                    <ul>
-                        <NavItem label="Dashboard" icon={<HomeIcon className="w-6 h-6" />} isActive={currentPage === 'dashboard'} onClick={() => setCurrentPage('dashboard')} />
-                        <NavItem label="Quản lý Trường học" icon={<SchoolIcon className="w-6 h-6" />} isActive={currentPage === 'schools'} onClick={() => setCurrentPage('schools')} />
-                        <NavItem label="Báo cáo & Thống kê" icon={<ChartBarIcon className="w-6 h-6" />} isActive={currentPage === 'reports'} onClick={() => setCurrentPage('reports')} />
-                        {currentUser.role === 'admin' && (
-                            <>
-                                <NavItem label="Quản lý Người dùng" icon={<UsersIcon className="w-6 h-6" />} isActive={currentPage === 'users'} onClick={() => setCurrentPage('users')} />
-                                <NavItem label="Cấu hình Hệ thống" icon={<CogIcon className="w-6 h-6" />} isActive={currentPage === 'settings'} onClick={() => setCurrentPage('settings')} />
-                            </>
-                        )}
-                    </ul>
-                     <div>
-                        <hr className="my-2 border-gray-200" />
-                        <NavItem label="Đăng xuất" icon={<LogoutIcon className="w-6 h-6" />} isActive={false} onClick={handleLogout} />
+        <>
+            {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
+            <div className="flex h-screen bg-brand-gray-light">
+                <aside className="w-64 bg-white shadow-lg flex flex-col">
+                    <div className="p-6 text-center border-b">
+                         <h2 className="text-xl font-bold text-brand-blue-dark">Admin Portal</h2>
+                         <p className="text-sm text-gray-500 mt-1">Xin chào, {currentUser.name}</p>
                     </div>
-                </nav>
-            </aside>
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header selectedYear={selectedYear} onYearChange={handleYearChange} schoolYears={schoolYears} />
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray p-8">
-                    {renderPage()}
-                </main>
+                    <nav className="flex-grow p-4 flex flex-col justify-between">
+                        <ul>
+                            <NavItem label="Dashboard" icon={<HomeIcon className="w-6 h-6" />} isActive={currentPage === 'dashboard'} onClick={() => setCurrentPage('dashboard')} />
+                            <NavItem label="Quản lý Trường học" icon={<SchoolIcon className="w-6 h-6" />} isActive={currentPage === 'schools'} onClick={() => setCurrentPage('schools')} />
+                            <NavItem label="Báo cáo & Thống kê" icon={<ChartBarIcon className="w-6 h-6" />} isActive={currentPage === 'reports'} onClick={() => setCurrentPage('reports')} />
+                            {currentUser.role === 'admin' && (
+                                <>
+                                    <NavItem label="Quản lý Người dùng" icon={<UsersIcon className="w-6 h-6" />} isActive={currentPage === 'users'} onClick={() => setCurrentPage('users')} />
+                                    <NavItem label="Cấu hình Hệ thống" icon={<CogIcon className="w-6 h-6" />} isActive={currentPage === 'settings'} onClick={() => setCurrentPage('settings')} />
+                                </>
+                            )}
+                        </ul>
+                         <div>
+                            <hr className="my-2 border-gray-200" />
+                            <NavItem label="Đăng xuất" icon={<LogoutIcon className="w-6 h-6" />} isActive={false} onClick={handleLogout} />
+                        </div>
+                    </nav>
+                </aside>
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header selectedYear={selectedYear} onYearChange={handleYearChange} schoolYears={schoolYears} />
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray p-8">
+                        {renderPage()}
+                    </main>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 

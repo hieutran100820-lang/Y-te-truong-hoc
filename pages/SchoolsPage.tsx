@@ -12,9 +12,10 @@ interface SchoolsPageProps {
   setSchools: React.Dispatch<React.SetStateAction<School[]>>;
   healthRecords: HealthRecord[];
   setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
+  showNotification: (message: string) => void;
 }
 
-const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, currentUser, schools, setSchools, healthRecords, setHealthRecords }) => {
+const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, currentUser, schools, setSchools, healthRecords, setHealthRecords, showNotification }) => {
     const schoolsForUser = currentUser.role === 'admin' 
         ? schools
         : schools.filter(s => currentUser.assignedSchoolIds?.includes(s.id));
@@ -70,6 +71,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
         const updatedSchools = [...schools, newSchoolWithId];
         setSchools(updatedSchools);
         setSelectedSchool(newSchoolWithId);
+        showNotification(`Trường "${newSchoolWithId.name}" đã được thêm thành công.`);
         
         setNewSchool({ name: '', level: 'THCS', location: '' });
         setAddModalOpen(false);
@@ -84,6 +86,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
 
         const updatedSchools = schools.filter(s => s.id !== schoolToDelete.id);
         setSchools(updatedSchools);
+        showNotification(`Trường "${schoolToDelete.name}" đã được xóa.`);
 
         setSchoolToDelete(null);
     };
@@ -152,7 +155,7 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                 </div>
                 <div className="lg:col-span-2">
                     {selectedSchool ? (
-                        <SchoolHealthDetail school={selectedSchool} selectedYear={selectedYear} dynamicFields={dynamicFields} healthRecords={healthRecords} setHealthRecords={setHealthRecords} />
+                        <SchoolHealthDetail school={selectedSchool} selectedYear={selectedYear} dynamicFields={dynamicFields} healthRecords={healthRecords} setHealthRecords={setHealthRecords} showNotification={showNotification} />
                     ) : (
                         <div className="bg-white p-6 rounded-lg shadow-md text-center">
                             <h3 className="text-xl font-semibold text-gray-800">
