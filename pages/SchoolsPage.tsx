@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { School, SchoolYear, DynamicField, User, HealthRecord } from '../types';
 import SchoolHealthDetail from '../components/SchoolHealthDetail';
 import Modal from '../components/Modal';
@@ -24,20 +22,32 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
     const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [newSchool, setNewSchool] = useState({
         name: '',
         level: 'THCS' as School['level'],
         location: ''
     });
 
+    const filteredSchools = useMemo(() =>
+        schoolsForUser.filter(school =>
+            school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            school.location.toLowerCase().includes(searchQuery.toLowerCase())
+        ), [schoolsForUser, searchQuery]);
+
+
     useEffect(() => {
-        // Update selectedSchool if the list changes or on initial load
-        if (schoolsForUser.length > 0 && !schoolsForUser.find(s => s.id === selectedSchool?.id)) {
-            setSelectedSchool(schoolsForUser[0]);
-        } else if (schoolsForUser.length === 0) {
+        // When the filtered list changes, update the selection.
+        if (filteredSchools.length > 0) {
+            // If the currently selected school is not in the new filtered list, select the first one.
+            if (!filteredSchools.find(s => s.id === selectedSchool?.id)) {
+                setSelectedSchool(filteredSchools[0]);
+            }
+        } else {
+            // If the filtered list is empty, deselect.
             setSelectedSchool(null);
         }
-    }, [schoolsForUser, selectedSchool]);
+    }, [filteredSchools, selectedSchool]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -95,8 +105,20 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                             </button>
                          )}
                     </div>
-                    <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
-                        {schoolsForUser.map(school => (
+                     <div className="mb-4 relative">
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm theo tên hoặc địa điểm..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
+                        />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <ul className="space-y-2 max-h-[55vh] overflow-y-auto">
+                        {filteredSchools.map(school => (
                             <li 
                                 key={school.id}
                                 onClick={() => setSelectedSchool(school)}
@@ -123,6 +145,9 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                                 )}
                             </li>
                         ))}
+                        {filteredSchools.length === 0 && (
+                            <li className="text-center text-gray-500 py-4">Không tìm thấy trường nào.</li>
+                        )}
                     </ul>
                 </div>
                 <div className="lg:col-span-2">
@@ -133,10 +158,12 @@ const SchoolsPage: React.FC<SchoolsPageProps> = ({ selectedYear, dynamicFields, 
                             <h3 className="text-xl font-semibold text-gray-800">
                                 {currentUser.role === 'admin' ? 'Chọn hoặc tạo trường mới' : 'Thông tin trường học'}
                             </h3>
-                            <p className="text-gray-500 mt-2">
-                                {currentUser.role === 'admin' 
-                                    ? 'Vui lòng chọn một trường từ danh sách hoặc thêm một trường mới để bắt đầu.'
-                                    : 'Không có trường nào được gán cho tài khoản của bạn.'
+                             <p className="text-gray-500 mt-2">
+                                {searchQuery 
+                                    ? 'Không có trường nào khớp với tìm kiếm của bạn.'
+                                    : currentUser.role === 'admin' 
+                                        ? 'Vui lòng chọn một trường từ danh sách hoặc thêm một trường mới để bắt đầu.'
+                                        : 'Không có trường nào được gán cho tài khoản của bạn.'
                                 }
                             </p>
                         </div>

@@ -11,6 +11,7 @@ interface SettingsPageProps {
   setDynamicFields: React.Dispatch<React.SetStateAction<DynamicField[]>>;
   healthRecords: HealthRecord[];
   setHealthRecords: React.Dispatch<React.SetStateAction<HealthRecord[]>>;
+  seedDatabase: () => void;
 }
 
 const TABS: { [key: string]: string } = {
@@ -29,7 +30,7 @@ const initialFieldState = {
     options: ''
 };
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields, healthRecords, setHealthRecords }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears, dynamicFields, setDynamicFields, healthRecords, setHealthRecords, seedDatabase }) => {
     const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
     const [yearToEdit, setYearToEdit] = useState<SchoolYear | null>(null);
     const [yearToLock, setYearToLock] = useState<SchoolYear | null>(null);
@@ -43,6 +44,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
     const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
     const [fieldData, setFieldData] = useState(initialFieldState);
     const [fieldToDelete, setFieldToDelete] = useState<DynamicField | null>(null);
+
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
 
     const handleOpenAddYearModal = () => {
         setNewYearName('');
@@ -153,25 +157,44 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         const fieldName = fieldData.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
 
         if (fieldData.id) { // Editing existing field
-            setDynamicFields(dynamicFields.map(f => f.id === fieldData.id ? {
-                ...f,
-                label: fieldData.label,
-                type: fieldData.type,
-                options: (fieldData.type === 'select' || fieldData.type === 'droplist') ? fieldData.options.split(',').map(s => s.trim()) : undefined,
-            } : f));
+            setDynamicFields(dynamicFields.map(f => {
+                if (f.id !== fieldData.id) return f;
+
+                // Create a new object for the updated field, excluding old options
+                const { options, ...baseField } = f;
+                const updatedField: DynamicField = {
+                    ...baseField,
+                    label: fieldData.label,
+                    type: fieldData.type,
+                };
+                
+                // Conditionally add the options property back if needed
+                if (fieldData.type === 'select' || fieldData.type === 'droplist') {
+                    updatedField.options = fieldData.options.split(',').map(s => s.trim());
+                }
+
+                return updatedField;
+            }));
         } else { // Adding new field
              if (dynamicFields.some(f => f.tab === selectedConfigTab && f.name === fieldName)) {
                 alert('Một trường với tên tương tự đã tồn tại trong tab này.');
                 return;
             }
+            
+            // Create the new field object
             const newField: DynamicField = {
                 id: Date.now().toString(),
                 tab: selectedConfigTab,
                 label: fieldData.label,
                 name: fieldName,
                 type: fieldData.type,
-                options: (fieldData.type === 'select' || fieldData.type === 'droplist') ? fieldData.options.split(',').map(s => s.trim()) : undefined,
             };
+
+            // Conditionally add the options property
+            if (fieldData.type === 'select' || fieldData.type === 'droplist') {
+                newField.options = fieldData.options.split(',').map(s => s.trim());
+            }
+
             setDynamicFields([...dynamicFields, newField]);
         }
         setIsFieldModalOpen(false);
@@ -181,6 +204,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
         if (!fieldToDelete) return;
         setDynamicFields(dynamicFields.filter(f => f.id !== fieldToDelete.id));
         setFieldToDelete(null);
+    };
+
+    const handleConfirmReset = () => {
+        seedDatabase();
+        setIsResetModalOpen(false);
     };
 
     const filteredFields = dynamicFields.filter(f => f.tab === selectedConfigTab);
@@ -269,6 +297,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
                     </div>
                 )}
             </div>
+             {/* Data Management Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-red-500">
+                <h3 className="text-xl font-semibold text-red-700">Quản lý Dữ liệu (Nguy hiểm)</h3>
+                <p className="text-gray-600 mt-2 mb-4">
+                    Thao tác này sẽ xóa toàn bộ dữ liệu hiện tại và khôi phục lại dữ liệu ban đầu của hệ thống (bao gồm danh sách 61 trường học mới nhất). 
+                    Chỉ thực hiện khi bạn muốn làm mới toàn bộ hệ thống.
+                </p>
+                <button
+                    onClick={() => setIsResetModalOpen(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                >
+                    Reset toàn bộ dữ liệu
+                </button>
+            </div>
             
             {/* --- Modals --- */}
             
@@ -342,6 +384,33 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ schoolYears, setSchoolYears
             <Modal isOpen={!!fieldToDelete} onClose={() => setFieldToDelete(null)} title="Xác nhận xóa trường thông tin">
                  <div className="py-2"><p className="text-gray-700">Bạn có chắc chắn muốn xóa trường <span className="font-bold">{fieldToDelete?.label}</span>?</p><p className="text-sm text-red-600 mt-2">Dữ liệu đã nhập cho trường này sẽ không còn hiển thị. Hành động này không thể hoàn tác.</p></div>
                  <div className="flex justify-end pt-4 space-x-2"><button type="button" onClick={() => setFieldToDelete(null)} className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-300 transition-colors duration-300">Hủy</button><button type="button" onClick={handleConfirmDeleteField} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300">Xác nhận Xóa</button></div>
+            </Modal>
+            
+            {/* Reset Data Modal */}
+            <Modal isOpen={isResetModalOpen} onClose={() => setIsResetModalOpen(false)} title="Xác nhận Reset Dữ liệu">
+                <div className="py-2">
+                    <p className="text-gray-700 text-lg">Bạn có thực sự chắc chắn muốn reset toàn bộ dữ liệu không?</p>
+                    <p className="text-sm text-red-600 mt-2 font-semibold">
+                        CẢNH BÁO: Hành động này sẽ <span className="font-bold">XÓA SẠCH</span> toàn bộ dữ liệu hiện tại (bao gồm tất cả các trường học, người dùng, hồ sơ y tế đã nhập) và thay thế bằng dữ liệu mặc định.
+                    </p>
+                    <p className="text-sm text-red-600 mt-1 font-semibold">Hành động này không thể hoàn tác.</p>
+                </div>
+                <div className="flex justify-end pt-4 space-x-2">
+                    <button 
+                        type="button" 
+                        onClick={() => setIsResetModalOpen(false)} 
+                        className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-300 transition-colors duration-300"
+                    >
+                        Hủy
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={handleConfirmReset} 
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                    >
+                        Tôi hiểu, Xác nhận Reset
+                    </button>
+                </div>
             </Modal>
         </div>
     );

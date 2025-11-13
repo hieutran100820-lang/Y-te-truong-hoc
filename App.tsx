@@ -81,8 +81,8 @@ const App: React.FC = () => {
             healthRecords: INITIAL_HEALTH_RECORDS,
         };
         set(ref(database), initialData)
-            .then(() => console.log("Database seeded successfully!"))
-            .catch((error) => console.error("Error seeding database:", error));
+            .then(() => alert("Dữ liệu đã được reset thành công về trạng thái ban đầu! Ứng dụng sẽ tự động làm mới."))
+            .catch((error) => alert(`Lỗi khi reset dữ liệu: ${error.message}`));
     };
 
     // Effect to load all data from Firebase and listen for real-time updates
@@ -166,12 +166,12 @@ const App: React.FC = () => {
         if (!selectedYear || !currentUser || !isDataLoaded) return <div className="p-8">Đang tải dữ liệu từ cloud...</div>;
 
         switch (currentPage) {
-            case 'dashboard': return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords}/>;
+            case 'dashboard': return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
             case 'schools': return <SchoolsPage selectedYear={selectedYear} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} setSchools={updateSchools} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} />;
             case 'reports': return <ReportsPage schoolYears={schoolYears} dynamicFields={dynamicFields} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
-            case 'users': return currentUser.role === 'admin' ? <UsersPage users={users} setUsers={updateUsers} schools={schools} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
-            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={updateSchoolYears} dynamicFields={dynamicFields} setDynamicFields={updateDynamicFields} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
-            default: return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} />;
+            case 'users': return currentUser.role === 'admin' ? <UsersPage users={users} setUsers={updateUsers} schools={schools} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
+            case 'settings': return currentUser.role === 'admin' ? <SettingsPage schoolYears={schoolYears} setSchoolYears={updateSchoolYears} dynamicFields={dynamicFields} setDynamicFields={updateDynamicFields} healthRecords={healthRecords} setHealthRecords={updateHealthRecords} seedDatabase={seedDatabase} /> : <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
+            default: return <DashboardPage selectedYear={selectedYear} currentUser={currentUser} schools={schools} healthRecords={healthRecords} dynamicFields={dynamicFields} />;
         }
     };
 
